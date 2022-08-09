@@ -15,13 +15,13 @@
 namespace maniscalco::network
 {
 
-    template <>
-    class socket_impl<tcp_listener_socket_traits> :
+    template <network_transport_protocol P>
+    class socket_impl<socket_traits<P, socket_type::passive>> :
         public socket_base_impl
     {
     public:
 
-        using traits = tcp_listener_socket_traits;
+        using traits = socket_traits<P, socket_type::passive>;
 
         struct event_handlers : socket_base_impl::event_handlers
         {
@@ -35,14 +35,6 @@ namespace maniscalco::network
             std::uint32_t backlog_;
         };
 
-        void destroy();
-
-        void on_selected();
-
-//    private:
-
-//        friend class network_interface;
-
         socket_impl
         (
             ip_address,
@@ -52,13 +44,23 @@ namespace maniscalco::network
             poller &
         );
 
+        void destroy();
+
+    private:
+
         void accept();
 
         poller_registration    pollerRegistration_;
 
         event_handlers::accept_handler acceptHandler_;
-    };
 
-    using tcp_listener_socket_impl = socket_impl<tcp_listener_socket_traits>;
+    }; // namespace socket_impl<passive_socket_traits_concept> 
 
-}
+
+    template <network_transport_protocol P>
+    using passive_socket_impl = socket_impl<socket_traits<P, socket_type::passive>>;
+
+
+    using tcp_listener_socket_impl = passive_socket_impl<network_transport_protocol::tcp>;
+
+} // namespace maniscalco::network

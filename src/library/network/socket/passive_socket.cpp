@@ -1,12 +1,11 @@
-#include "./tcp_listener_socket.h"
+#include "./passive_socket.h"
 
-#include "./private/tcp_listener_socket_impl.h"
-
-#include <iostream>
+#include "./private/passive_socket_impl.h"
 
 
 //=============================================================================
-maniscalco::network::tcp_listener_socket::socket
+template <maniscalco::network::network_transport_protocol P>
+maniscalco::network::passive_socket<P>::socket
 (
     ip_address ipAddress,
     configuration const & config,
@@ -15,15 +14,13 @@ maniscalco::network::tcp_listener_socket::socket
     poller & p
 )
 {
-    impl_ = std::move(decltype(impl_)(new socket_impl<traits>(
+    impl_ = std::move(decltype(impl_)(new impl_type(
             ipAddress, 
             {
                 .backlog_ = 128
             }, 
-            socket_impl<traits>::event_handlers
             {
                 eventHandlers.closeHandler_,
-                nullptr,
                 eventHandlers.acceptHandler_
             },
             workContractGroup, p), 
@@ -32,7 +29,8 @@ maniscalco::network::tcp_listener_socket::socket
 
 
 //=============================================================================
-maniscalco::network::tcp_listener_socket::~socket
+template <maniscalco::network::network_transport_protocol P>
+maniscalco::network::passive_socket<P>::~socket
 (
 )
 {
@@ -40,7 +38,8 @@ maniscalco::network::tcp_listener_socket::~socket
 
 
 //=============================================================================
-bool maniscalco::network::tcp_listener_socket::close
+template <maniscalco::network::network_transport_protocol P>
+bool maniscalco::network::passive_socket<P>::close
 (
 )
 {
@@ -51,7 +50,8 @@ bool maniscalco::network::tcp_listener_socket::close
 
 
 //=============================================================================
-bool maniscalco::network::tcp_listener_socket::is_valid
+template <maniscalco::network::network_transport_protocol P>
+bool maniscalco::network::passive_socket<P>::is_valid
 (
 ) const noexcept
 {
@@ -62,7 +62,8 @@ bool maniscalco::network::tcp_listener_socket::is_valid
 
 
 //=============================================================================
-auto maniscalco::network::tcp_listener_socket::get_ip_address
+template <maniscalco::network::network_transport_protocol P>
+auto maniscalco::network::passive_socket<P>::get_ip_address
 (
 ) const noexcept -> ip_address
 {
@@ -73,11 +74,19 @@ auto maniscalco::network::tcp_listener_socket::get_ip_address
 
 
 //=============================================================================
-auto maniscalco::network::tcp_listener_socket::get_id
+template <maniscalco::network::network_transport_protocol P>
+auto maniscalco::network::passive_socket<P>::get_id
 (
 ) const -> socket_id
 {
     if (impl_)
         return impl_->get_id();
     return {};
+}
+
+
+//=============================================================================
+namespace maniscalco::network
+{
+    template class socket<tcp_listener_socket_traits>;
 }

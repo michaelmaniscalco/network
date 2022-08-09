@@ -2,16 +2,14 @@ add_library(network
     ./network.cpp
     ./socket/socket_id.cpp
     ./ip/ip_address.cpp
-    ./socket/tcp_socket.cpp
-    ./socket/tcp_listener_socket.cpp
-    ./socket/udp_socket.cpp
+    ./socket/active_socket.cpp
+    ./socket/passive_socket.cpp
     ./polling/poller.cpp
     ./polling/poller_registration.cpp
     ./network_interface/network_interface.cpp
     ./socket/private/socket_base_impl.cpp
-    ./socket/private/udp_socket_impl.cpp
-    ./socket/private/tcp_socket_impl.cpp
-    ./socket/private/tcp_listener_socket_impl.cpp
+    ./socket/private/passive_socket_impl.cpp
+    ./socket/private/active_socket_impl.cpp
 )
 
 target_link_libraries(network 

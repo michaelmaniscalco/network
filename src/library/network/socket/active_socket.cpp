@@ -1,12 +1,11 @@
-#include "./tcp_socket.h"
+#include "./active_socket.h"
 
-#include "./private/tcp_socket_impl.h"
-
-#include <iostream>
+#include "./private/active_socket_impl.h"
 
 
 //=============================================================================
-maniscalco::network::tcp_socket::socket
+template <maniscalco::network::network_transport_protocol P>
+maniscalco::network::active_socket<P>::socket
 (
     ip_address ipAddress,
     configuration const & config,
@@ -15,12 +14,12 @@ maniscalco::network::tcp_socket::socket
     poller & p
 )
 {
-    impl_ = std::move(decltype(impl_)(new socket_impl<traits>(
+    impl_ = std::move(decltype(impl_)(new impl_type(
             ipAddress, 
             {}, // TODO: copy fields from config when available 
             {
-                .closeHandler_ = eventHandlers.closeHandler_,
-                .receiveHandler_ = eventHandlers.receiveHandler_
+                eventHandlers.closeHandler_,
+                eventHandlers.receiveHandler_
             },
             workContractGroup, p), 
             [](auto * impl){impl->destroy();}));
@@ -28,7 +27,8 @@ maniscalco::network::tcp_socket::socket
 
 
 //=============================================================================
-maniscalco::network::tcp_socket::socket
+template <maniscalco::network::network_transport_protocol P>
+maniscalco::network::active_socket<P>::socket
 (
     file_descriptor fileDescriptor,
     configuration const & config,
@@ -37,12 +37,12 @@ maniscalco::network::tcp_socket::socket
     poller & p
 )
 {
-    impl_ = std::move(decltype(impl_)(new socket_impl<traits>(
+    impl_ = std::move(decltype(impl_)(new impl_type(
             std::move(fileDescriptor), 
             {}, // TODO: copy fields from config when available 
             {
-                .closeHandler_ = eventHandlers.closeHandler_,
-                .receiveHandler_ = eventHandlers.receiveHandler_
+                eventHandlers.closeHandler_,
+                eventHandlers.receiveHandler_
             },
             workContractGroup, p), 
             [](auto * impl){impl->destroy();}));
@@ -50,7 +50,8 @@ maniscalco::network::tcp_socket::socket
 
 
 //=============================================================================
-maniscalco::network::tcp_socket::~socket
+template <maniscalco::network::network_transport_protocol P>
+maniscalco::network::active_socket<P>::~socket
 (
 )
 {
@@ -58,7 +59,8 @@ maniscalco::network::tcp_socket::~socket
 
 
 //=============================================================================
-auto maniscalco::network::tcp_socket::connect_to
+template <maniscalco::network::network_transport_protocol P>
+auto maniscalco::network::active_socket<P>::connect_to
 (
     ip_address const & destination
 ) noexcept -> connect_result
@@ -70,7 +72,8 @@ auto maniscalco::network::tcp_socket::connect_to
 
 
 //=============================================================================
-std::span<char const> maniscalco::network::tcp_socket::send
+template <maniscalco::network::network_transport_protocol P>
+std::span<char const> maniscalco::network::active_socket<P>::send
 (
     std::span<char const> data
 )
@@ -82,7 +85,8 @@ std::span<char const> maniscalco::network::tcp_socket::send
 
 
 //=============================================================================
-bool maniscalco::network::tcp_socket::close
+template <maniscalco::network::network_transport_protocol P>
+bool maniscalco::network::active_socket<P>::close
 (
 )
 {
@@ -93,7 +97,8 @@ bool maniscalco::network::tcp_socket::close
 
 
 //=============================================================================
-bool maniscalco::network::tcp_socket::is_valid
+template <maniscalco::network::network_transport_protocol P>
+bool maniscalco::network::active_socket<P>::is_valid
 (
 ) const noexcept
 {
@@ -104,7 +109,8 @@ bool maniscalco::network::tcp_socket::is_valid
 
 
 //=============================================================================
-auto maniscalco::network::tcp_socket::get_ip_address
+template <maniscalco::network::network_transport_protocol P>
+auto maniscalco::network::active_socket<P>::get_ip_address
 (
 ) const noexcept -> ip_address
 {
@@ -115,7 +121,8 @@ auto maniscalco::network::tcp_socket::get_ip_address
 
 
 //=============================================================================
-bool maniscalco::network::tcp_socket::is_connected
+template <maniscalco::network::network_transport_protocol P>
+bool maniscalco::network::active_socket<P>::is_connected
 (
 ) const noexcept
 {
@@ -126,7 +133,8 @@ bool maniscalco::network::tcp_socket::is_connected
 
 
 //=============================================================================
-auto maniscalco::network::tcp_socket::get_connected_ip_address
+template <maniscalco::network::network_transport_protocol P>
+auto maniscalco::network::active_socket<P>::get_connected_ip_address
 (
 ) const noexcept -> ip_address
 {
@@ -137,7 +145,8 @@ auto maniscalco::network::tcp_socket::get_connected_ip_address
 
 
 //=============================================================================
-std::vector<std::uint8_t> maniscalco::network::tcp_socket::receive
+template <maniscalco::network::network_transport_protocol P>
+std::vector<std::uint8_t> maniscalco::network::active_socket<P>::receive
 (
 )
 {
@@ -148,11 +157,20 @@ std::vector<std::uint8_t> maniscalco::network::tcp_socket::receive
 
 
 //=============================================================================
-auto maniscalco::network::tcp_socket::get_id
+template <maniscalco::network::network_transport_protocol P>
+auto maniscalco::network::active_socket<P>::get_id
 (
 ) const -> socket_id
 {
     if (impl_)
         return impl_->get_id();
     return {};
+}
+
+
+//=============================================================================
+namespace maniscalco::network
+{
+    template class socket<tcp_socket_traits>;
+    template class socket<udp_socket_traits>;
 }

@@ -1,7 +1,5 @@
 #include "./network_interface.h"
 
-#include <library/network/socket/private/udp_socket_impl.h>
-
 #include <iostream>
 
 
@@ -18,50 +16,15 @@ maniscalco::network::network_interface::network_interface
 
 
 //=============================================================================
+template <maniscalco::network::socket_concept S, typename T>
 auto maniscalco::network::network_interface::open_socket
 (
-    ip_address ipAddress,
-    tcp_socket::configuration config,
-    tcp_socket::event_handlers eventHandlers
-) -> tcp_socket
+    T handle,
+    typename S::configuration config,
+    typename S::event_handlers eventHandlers
+) -> S
 {
-    return tcp_socket{ipAddress, config, eventHandlers, *workContractGroup_, *poller_};
-}
-
-
-//=============================================================================
-auto maniscalco::network::network_interface::open_socket
-(
-    file_descriptor fileDescriptor,
-    tcp_socket::configuration config,
-    tcp_socket::event_handlers eventHandlers
-) -> tcp_socket
-{
-    return tcp_socket{std::move(fileDescriptor), config, eventHandlers, *workContractGroup_, *poller_};
-}
-
-
-//=============================================================================
-auto maniscalco::network::network_interface::open_socket
-(
-    ip_address ipAddress,
-    udp_socket::configuration config,
-    udp_socket::event_handlers eventHandlers
-) -> udp_socket
-{
-    return udp_socket{ipAddress, config, eventHandlers, *workContractGroup_, *poller_};
-}
-
-
-//=============================================================================
-auto maniscalco::network::network_interface::open_socket
-(
-    ip_address ipAddress,
-    tcp_listener_socket::configuration config,
-    tcp_listener_socket::event_handlers eventHandlers
-) -> tcp_listener_socket
-{
-    return tcp_listener_socket{ipAddress, config, eventHandlers, *workContractGroup_, *poller_};
+    return S{std::move(handle), config, eventHandlers, *workContractGroup_, *poller_};
 }
 
 
@@ -73,3 +36,17 @@ void maniscalco::network::network_interface::poll
     poller_->poll();
 }
 
+
+//=============================================================================
+namespace maniscalco::network
+{
+
+    template tcp_socket network_interface::open_socket(file_descriptor, tcp_socket::configuration, tcp_socket::event_handlers);
+
+    template tcp_socket network_interface::open_socket(ip_address,tcp_socket::configuration, tcp_socket::event_handlers);
+
+    template tcp_listener_socket network_interface::open_socket(ip_address, tcp_listener_socket::configuration, tcp_listener_socket::event_handlers);
+
+    template udp_socket network_interface::open_socket(ip_address, udp_socket::configuration, udp_socket::event_handlers);
+    
+}

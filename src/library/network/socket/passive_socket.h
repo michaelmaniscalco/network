@@ -22,12 +22,12 @@ namespace maniscalco::network
 
 
     //=========================================================================
-    template <>
-    class socket<tcp_listener_socket_traits>
+    template <network_transport_protocol P>
+    class socket<passive_socket_traits<P>>
     {
     public:
 
-        using traits = tcp_listener_socket_traits; 
+        using traits = passive_socket_traits<P>; 
 
         static auto constexpr default_backlog{128};
 
@@ -45,6 +45,9 @@ namespace maniscalco::network
             std::uint32_t backlog_{default_backlog};
         };
 
+        socket(socket const &) = delete;
+        socket & operator = (socket const &) = delete;
+        
         socket() = default;
         socket(socket &&) = default;
         socket & operator = (socket &&) = default;
@@ -70,17 +73,17 @@ namespace maniscalco::network
         
     private:
 
-        friend class poller;
+        using impl_type = socket_impl<traits>;
 
-        std::unique_ptr<socket_impl<traits>, std::function<void(socket_impl<traits> *)>>   impl_;
+        std::unique_ptr<impl_type, std::function<void(impl_type *)>>   impl_;
 
-    }; // class socket<tcp_listener_socket_traits>
+    }; // class socket<passive_socket_traits<P>>
 
 
-    //=========================================================================
-    template <socket_concept T> 
-    static bool constexpr is_tcp_listener_socket_v = std::is_same_v<typename T::traits, tcp_listener_socket_traits>;
+    template <network_transport_protocol T>
+    using passive_socket = socket<passive_socket_traits<T>>;
 
-    using tcp_listener_socket = socket<tcp_listener_socket_traits>;
+
+    using tcp_listener_socket = passive_socket<network_transport_protocol::tcp>;
 
 } // namespace maniscalco::network

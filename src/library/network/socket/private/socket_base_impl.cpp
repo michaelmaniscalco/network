@@ -20,7 +20,7 @@ maniscalco::network::socket_base_impl::socket_base_impl
     system::work_contract workContract
 ) noexcept :
     fileDescriptor_(std::move(fileDescriptor)),
-    eventHandlers_(eventHandlers),
+    closeHandler_(eventHandlers.closeHandler_),
     workContract_(std::move(workContract))
 {
     if (!set_socket_option(SOL_SOCKET, SO_REUSEADDR, 1))
@@ -55,7 +55,7 @@ maniscalco::network::socket_base_impl::socket_base_impl
     system::work_contract workContract
 ) noexcept :
     fileDescriptor_(std::move(fileDescriptor)),
-    eventHandlers_(eventHandlers),
+    closeHandler_(eventHandlers.closeHandler_),
     workContract_(std::move(workContract))
 {
     if (!set_socket_option(SOL_SOCKET, SO_REUSEADDR, 1))
@@ -80,19 +80,6 @@ void maniscalco::network::socket_base_impl::on_polled
 )
 {
     workContract_.invoke();
-}
-
-
-//=============================================================================
-template <typename T>
-bool maniscalco::network::socket_base_impl::set_socket_option
-(
-    std::int32_t level,
-    std::int32_t optionName,
-    T optionValue
-) noexcept
-{
-    return (::setsockopt(fileDescriptor_.get(), level, optionName, &optionValue, sizeof(optionValue)) == 0);
 }
 
 
@@ -135,21 +122,12 @@ bool maniscalco::network::socket_base_impl::close
 {
     if (fileDescriptor_.close())
     {
-        if (eventHandlers_.closeHandler_)
-            eventHandlers_.closeHandler_(id_);
+        if (closeHandler_)
+            closeHandler_(id_);
         ipAddress_ = {};
         return true;
     }
     return false;
-}
-
-
-//=============================================================================
-bool maniscalco::network::socket_base_impl::is_connected
-(
-) const noexcept
-{
-    return (connectedIpAddress_.is_valid());
 }
 
 
@@ -177,53 +155,6 @@ auto maniscalco::network::socket_base_impl::get_ip_address
 ) const noexcept -> ip_address
 {
     return ipAddress_;
-}
-
-
-//=============================================================================
-auto maniscalco::network::socket_base_impl::get_connected_ip_address
-(
-) const noexcept -> ip_address
-{
-    return connectedIpAddress_;
-}
-
-
-//=============================================================================
-auto maniscalco::network::socket_base_impl::get_peer_name
-(
-) const noexcept -> ip_address
-{
-    ::sockaddr_in socketAddress;
-    socketAddress.sin_family = AF_INET;
-    ::socklen_t sizeofSocketAddress(sizeof(socketAddress));
-    if (::getpeername(fileDescriptor_.get(), (struct sockaddr *)&socketAddress, &sizeofSocketAddress) == 0)
-        return {socketAddress};
-    return {};
-}
-
-
-//=============================================================================
-std::vector<std::uint8_t> maniscalco::network::socket_base_impl::receive
-(
-)
-{
-    // TODO: get from allocator
-    std::vector<std::uint8_t> buffer(2048);
-
-    auto result = ::recv(fileDescriptor_.get(), buffer.data(), buffer.capacity(), 0);
-    if (result > 0)
-    {
-        buffer.resize(result);
-        eventHandlers_.receiveHandler_(id_, std::move(buffer));
-        on_polled(); // there could be more ...
-    //    std::cout << "received " << buffer.size() << " bytes\n";
-        return buffer;
-    }
-    if (result == EAGAIN)
-        on_polled();
-    // TODO: deal with actual errors
-    return {};
 }
 
 

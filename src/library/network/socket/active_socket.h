@@ -22,12 +22,12 @@ namespace maniscalco::network
 
 
     //=========================================================================
-    template <>
-    class socket<tcp_socket_traits>
+    template <network_transport_protocol P>
+    class socket<active_socket_traits<P>>
     {
     public:
 
-        using traits = tcp_socket_traits; 
+        using traits = active_socket_traits<P>; 
 
         struct event_handlers
         {
@@ -42,6 +42,10 @@ namespace maniscalco::network
         {
         };
 
+
+        socket(socket const &) = delete;
+        socket & operator = (socket const &) = delete;
+        
         socket() = default;
         socket(socket &&) = default;
         socket & operator = (socket &&) = default;
@@ -92,17 +96,17 @@ namespace maniscalco::network
         
     private:
 
-        friend class poller;
+        using impl_type = socket_impl<traits>;
 
-        std::unique_ptr<socket_impl<traits>, std::function<void(socket_impl<traits> *)>>   impl_;
+        std::unique_ptr<impl_type, std::function<void(impl_type *)>>   impl_;
 
-    }; // class socket<tcp_socket_traits>
+    }; // class socket<active_socket_traits<P>>
 
 
-    //=========================================================================
-    template <socket_concept T> 
-    static bool constexpr is_tcp_socket_v = std::is_same_v<typename T::traits, tcp_socket_traits>;
+    template <network_transport_protocol T>
+    using active_socket = socket<active_socket_traits<T>>;
 
-    using tcp_socket = socket<tcp_socket_traits>;
+    using udp_socket = active_socket<network_transport_protocol::udp>;
+    using tcp_socket = active_socket<network_transport_protocol::tcp>;
 
 } // namespace maniscalco::network

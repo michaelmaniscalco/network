@@ -7,7 +7,7 @@
 #include <iostream>
 
 
-namespace maniscalco
+namespace maniscalco::network
 {
 
     class socket_id
@@ -36,14 +36,14 @@ namespace maniscalco
         value_type   value_{0};
     };
 
-} // namespace maniscalco
+} // namespace maniscalco::network
 
 
 //=============================================================================
 static std::ostream & operator << 
 (
     std::ostream & stream,
-    maniscalco::socket_id const & socketId
+    maniscalco::network::socket_id const & socketId
 )
 {
     stream << socketId.get();

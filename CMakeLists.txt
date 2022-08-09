@@ -32,7 +32,7 @@ include("./scripts/fetch_dependencies.cmake")
 
 fetch_dependency("https://github.com/fmtlib/fmt.git;5f774c0aed4af6494b412cd3883e0f09295bd79d")
 fetch_dependency("https://github.com/michaelmaniscalco/common.git;master")
-fetch_dependency("https://github.com/michaelmaniscalco/work_contract.git;5dceb6de35e068820bf947d0e0886c1527b02e78")
+fetch_dependency("https://github.com/michaelmaniscalco/work_contract.git;master")
 
 message("Build Type = ${CMAKE_BUILD_TYPE}")
 

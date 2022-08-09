@@ -25,10 +25,8 @@ namespace maniscalco::network
         struct event_handlers
         {
             using close_handler = std::function<void(socket_id)>;
-            using receive_handler = std::function<void(socket_id, std::vector<std::uint8_t>)>;
 
             close_handler   closeHandler_;
-            receive_handler receiveHandler_;
         };
 
         struct configuration
@@ -63,15 +61,13 @@ namespace maniscalco::network
         
         ip_address get_ip_address() const noexcept;
 
-        bool is_connected() const noexcept;
-
-        ip_address get_connected_ip_address() const noexcept;
-
-        std::vector<std::uint8_t> receive();
-
         socket_id get_id() const noexcept;
 
- //   protected:
+    protected:
+
+        // unfortunate
+        friend class poller;
+
         bool set_synchronicity
         (
             synchronicity_mode
@@ -87,29 +83,36 @@ namespace maniscalco::network
             T
         ) noexcept;
 
-        [[nodiscard]] bind_result bind
+        bind_result bind
         (
             ip_address const &
         ) noexcept;
 
         ip_address get_socket_name() const noexcept;
 
-        ip_address get_peer_name() const noexcept;
-
         file_descriptor                 fileDescriptor_;
 
         ip_address                      ipAddress_;
 
-        ip_address                      connectedIpAddress_;
-
         socket_id                       id_;
 
-  //  private:
-
-        event_handlers                  eventHandlers_;
+        event_handlers::close_handler   closeHandler_;
 
         system::work_contract           workContract_;
 
     }; // class socket_base_impl
 
 } // namespace maniscalco::network
+
+
+//=============================================================================
+template <typename T>
+bool maniscalco::network::socket_base_impl::set_socket_option
+(
+    std::int32_t level,
+    std::int32_t optionName,
+    T optionValue
+) noexcept
+{
+    return (::setsockopt(fileDescriptor_.get(), level, optionName, &optionValue, sizeof(optionValue)) == 0);
+}

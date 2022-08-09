@@ -4,7 +4,7 @@
 
 
 //=============================================================================
-maniscalco::socket_id::socket_id
+maniscalco::network::socket_id::socket_id
 (
 )
 {
@@ -14,7 +14,7 @@ maniscalco::socket_id::socket_id
 
 
 //=============================================================================
-auto maniscalco::socket_id::get
+auto maniscalco::network::socket_id::get
 (
 ) const noexcept -> value_type
 {
@@ -23,7 +23,7 @@ auto maniscalco::socket_id::get
 
 
 //=============================================================================
-bool maniscalco::socket_id::is_valid
+bool maniscalco::network::socket_id::is_valid
 (
 ) const noexcept
 {
@@ -32,7 +32,7 @@ bool maniscalco::socket_id::is_valid
 
 
 //=============================================================================
-bool maniscalco::socket_id::operator <
+bool maniscalco::network::socket_id::operator <
 (
     socket_id const & other
 ) const noexcept

@@ -43,6 +43,8 @@ namespace maniscalco::network
 
         bool is_valid() const noexcept;
 
+        bool is_multicast() const noexcept;
+
     private:
 
         network_id  networkId_;
@@ -73,6 +75,15 @@ constexpr maniscalco::network::ip_address::ip_address
     networkId_(networkId),
     portId_(portId)
 {
+}
+
+
+//=============================================================================
+inline bool maniscalco::network::ip_address::is_multicast
+(
+) const noexcept
+{
+    return networkId_.is_multicast();
 }
 
 

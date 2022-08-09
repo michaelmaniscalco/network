@@ -42,6 +42,8 @@ namespace maniscalco::network
 
         operator ::in_addr() const noexcept;
 
+        bool is_multicast() const noexcept;
+        
     private:
 
         value_type value_{};
@@ -110,6 +112,16 @@ inline std::uint32_t maniscalco::network::network_id::get
 ) const noexcept
 {
     return value_;
+}
+
+
+//=============================================================================
+inline bool maniscalco::network::network_id::is_multicast
+(
+) const noexcept
+{
+    static auto constexpr mask = 0xe0000000ul;
+    return ((value_ & mask) == mask);  
 }
 
 

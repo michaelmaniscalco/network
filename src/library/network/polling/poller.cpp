@@ -1,8 +1,7 @@
 #include "./poller.h"
 
-#include <library/network/socket/private/tcp_socket_impl.h>
-#include <library/network/socket/private/tcp_listener_socket_impl.h>
-#include <library/network/socket/private/udp_socket_impl.h>
+#include <library/network/socket/private/active_socket_impl.h>
+#include <library/network/socket/private/passive_socket_impl.h>
 
 #include <sys/socket.h>
 #include <netinet/in.h>

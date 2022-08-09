@@ -1,9 +1,8 @@
 #pragma once
 
 #include <library/network/polling/poller.h>
-#include <library/network/socket/tcp_socket.h>
-#include <library/network/socket/udp_socket.h>
-#include <library/network/socket/tcp_listener_socket.h>
+#include <library/network/socket/active_socket.h>
+#include <library/network/socket/passive_socket.h>
 
 #include <library/system.h>
 
@@ -28,32 +27,12 @@ namespace maniscalco::network
 
         ~network_interface() = default;
 
-        tcp_listener_socket open_socket
+        template <socket_concept P, typename T>
+        P open_socket
         (
-            ip_address,
-            tcp_listener_socket::configuration,
-            tcp_listener_socket::event_handlers
-        );
-
-        udp_socket open_socket
-        (
-            ip_address,
-            udp_socket::configuration,
-            udp_socket::event_handlers
-        );
-
-        tcp_socket open_socket
-        (
-            ip_address,
-            tcp_socket::configuration,
-            tcp_socket::event_handlers
-        );
-
-        tcp_socket open_socket
-        (
-            file_descriptor,
-            tcp_socket::configuration,
-            tcp_socket::event_handlers
+            T,
+            typename P::configuration,
+            typename P::event_handlers
         );
 
         void poll();

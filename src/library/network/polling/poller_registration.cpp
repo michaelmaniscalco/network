@@ -6,7 +6,7 @@
 maniscalco::network::poller_registration::poller_registration
 (
     std::weak_ptr<poller> p,
-    file_descriptor const & fileDescriptor
+    system::file_descriptor const & fileDescriptor
 ):
     poller_(p),
     fileDescriptor_(fileDescriptor)

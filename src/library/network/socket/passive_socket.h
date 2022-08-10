@@ -6,7 +6,6 @@
 #include "./return_code/bind_result.h"
 #include <include/file_descriptor.h>
 #include <library/network/ip/ip_address.h>
-#include <library/network/packet/packet.h>
 
 #include <library/system.h>
 
@@ -34,7 +33,7 @@ namespace maniscalco::network
         struct event_handlers
         {
             using close_handler = std::function<void(socket_id)>;
-            using accept_handler = std::function<void(socket_id, file_descriptor)>;
+            using accept_handler = std::function<void(socket_id, system::file_descriptor)>;
 
             close_handler   closeHandler_;
             accept_handler  acceptHandler_;

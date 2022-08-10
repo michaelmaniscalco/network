@@ -86,15 +86,7 @@ auto maniscalco::network::poller::register_socket
     auto epollCtlResult = ::epoll_ctl(fileDescriptor_.get(), EPOLL_CTL_ADD, socketImpl->get_file_descriptor().get(), &epollEvent);
     if (epollCtlResult != 0)
     {
-        // failure
-        if (epollCtlResult == -1)
-        {
-           // glimpse_error << "kernel_poller::add_socket: epoll_ctl failed: " << ::strerror(errno);
-        }
-        else
-        {
-            //glimpse_error << "kernel_poller::add_socket: epoll_ctl returned unexpected error code [" << epollCtlResult << "]";
-        }
+        // TODO: log failure
         return {weak_from_this(), {}};
     }
     return {weak_from_this(), socketImpl->get_file_descriptor()};
@@ -104,22 +96,14 @@ auto maniscalco::network::poller::register_socket
 //=============================================================================
 bool maniscalco::network::poller::unregister_socket
 (
-    file_descriptor const & fileDescriptor
+    system::file_descriptor const & fileDescriptor
 )
 {
     ::epoll_event epollEvent;
     auto epollCtlResult = ::epoll_ctl(fileDescriptor_.get(), EPOLL_CTL_DEL, fileDescriptor.get(), &epollEvent);
     if (epollCtlResult != 0)
     {
-        // failure
-        if (epollCtlResult == -1)
-        {
-        //    glimpse_error << "kernel_poller::remove_socket: epoll_ctl failed [" << fileDescriptor << "]: " << ::strerror(errno);
-        }
-        else
-        {
-         //   glimpse_error << "kernel_poller::remove_socket: epoll_ctl returned unexpected error code [" << epollCtlResult << "]";
-        }
+        // TODO: log failure
         return false;
     }
     return true;

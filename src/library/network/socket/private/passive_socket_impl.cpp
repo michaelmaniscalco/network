@@ -32,7 +32,7 @@ void maniscalco::network::passive_socket_impl<P>::accept
 {
     ::sockaddr address;
     socklen_t addressLength = sizeof(address);
-    file_descriptor fileDescriptor(::accept(fileDescriptor_.get(), &address, &addressLength));
+    system::file_descriptor fileDescriptor(::accept(fileDescriptor_.get(), &address, &addressLength));
     if (acceptHandler_)
         acceptHandler_(id_, std::move(fileDescriptor));
 }

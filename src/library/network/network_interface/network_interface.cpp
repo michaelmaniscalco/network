@@ -41,12 +41,9 @@ void maniscalco::network::network_interface::poll
 namespace maniscalco::network
 {
 
-    template tcp_socket network_interface::open_socket(file_descriptor, tcp_socket::configuration, tcp_socket::event_handlers);
-
+    template tcp_socket network_interface::open_socket(system::file_descriptor, tcp_socket::configuration, tcp_socket::event_handlers);
     template tcp_socket network_interface::open_socket(ip_address,tcp_socket::configuration, tcp_socket::event_handlers);
-
     template tcp_listener_socket network_interface::open_socket(ip_address, tcp_listener_socket::configuration, tcp_listener_socket::event_handlers);
-
     template udp_socket network_interface::open_socket(ip_address, udp_socket::configuration, udp_socket::event_handlers);
     
 }

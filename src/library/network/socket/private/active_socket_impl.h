@@ -45,7 +45,7 @@ namespace maniscalco::network
 
         socket_impl
         (
-            file_descriptor,
+            system::file_descriptor,
             configuration const &,
             event_handlers const &,
             system::work_contract_group &,

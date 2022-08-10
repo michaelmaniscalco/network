@@ -1,5 +1,4 @@
 add_library(network
-    ./network.cpp
     ./socket/socket_id.cpp
     ./ip/ip_address.cpp
     ./socket/active_socket.cpp
@@ -15,7 +14,7 @@ add_library(network
 target_link_libraries(network 
 PUBLIC
     fmt::fmt
-    work_contract
+    system
     )
 
 target_include_directories(network

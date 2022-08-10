@@ -6,9 +6,6 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(PROJECT_NAME network)
 project(${PROJECT_NAME})
 
-include(CheckIPOSupported)
-check_ipo_supported(RESULT supported OUTPUT error)
-
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
 endif()

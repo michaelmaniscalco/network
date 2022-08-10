@@ -18,7 +18,7 @@ namespace maniscalco::network
         poller_registration
         (
             std::weak_ptr<poller>,
-            file_descriptor const &
+            system::file_descriptor const &
         );
 
         ~poller_registration();
@@ -29,7 +29,7 @@ namespace maniscalco::network
 
         std::weak_ptr<poller>   poller_;
 
-        file_descriptor const & fileDescriptor_;
+        system::file_descriptor const & fileDescriptor_;
 
     }; // class poller_registration
 

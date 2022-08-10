@@ -25,13 +25,8 @@ namespace
 
     // set up work contract group
     auto workContractGroup = work_contract_group::create({});
-    // set up thread pool to process work contracts
-    thread_pool threadPool({.threadCount_ = 4, .workerThreadFunction_ = [](){workContractGroup->service_contracts();}});
     // set up a network interface
     network_interface networkInterface({}, workContractGroup);
-    // set up a second thread pool just to poll the network interface
-    thread_pool threadPool2({.threadCount_ = 1, .workerThreadFunction_ = [](){networkInterface.poll();}});
-
 
     auto closeHandler = []
             (
@@ -134,6 +129,19 @@ int main
     char **
 )
 {
+
+    // set up thread pool to process work contracts
+    static auto constexpr num_worker_threads = 4;
+    std::vector<thread_pool::thread_configuration> threads;
+    for (auto i = 0; i < num_worker_threads; ++i)
+        threads.push_back({.function_ = [&]()
+                {
+                    workContractGroup->service_contracts();
+                }});
+    // add one additional thread for polling
+    threads.push_back({.function_ = [&](){networkInterface.poll();}});
+    thread_pool workerThreadPool({.threads_ = threads});
+
     demonstrate_tcp_sockets();
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
 

@@ -6,7 +6,6 @@
 #include "./return_code/bind_result.h"
 #include <include/file_descriptor.h>
 #include <library/network/ip/ip_address.h>
-#include <library/network/packet/packet.h>
 
 #include <library/system.h>
 
@@ -61,7 +60,7 @@ namespace maniscalco::network
 
         socket
         (
-            file_descriptor,
+            system::file_descriptor,
             configuration const &,
             event_handlers const &,
             system::work_contract_group &,

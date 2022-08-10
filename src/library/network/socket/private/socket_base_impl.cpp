@@ -16,7 +16,7 @@ maniscalco::network::socket_base_impl::socket_base_impl
     ip_address ipAddress,
     configuration const & config,
     event_handlers const & eventHandlers,
-    file_descriptor fileDescriptor,
+    system::file_descriptor fileDescriptor,
     system::work_contract workContract
 ) noexcept :
     fileDescriptor_(std::move(fileDescriptor)),
@@ -24,7 +24,7 @@ maniscalco::network::socket_base_impl::socket_base_impl
     workContract_(std::move(workContract))
 {
     if (!set_socket_option(SOL_SOCKET, SO_REUSEADDR, 1))
-        ;//glimpse_warning << "socket::socket: failed to set sock option SO_REUSEADDR";
+        ;// TODO: log failure
     ipAddress_ = get_socket_name();
     auto bindResult = bind(ipAddress);
     switch (bindResult)
@@ -51,7 +51,7 @@ maniscalco::network::socket_base_impl::socket_base_impl
 (
     configuration const & config,
     event_handlers const & eventHandlers,
-    file_descriptor fileDescriptor,
+    system::file_descriptor fileDescriptor,
     system::work_contract workContract
 ) noexcept :
     fileDescriptor_(std::move(fileDescriptor)),
@@ -59,7 +59,7 @@ maniscalco::network::socket_base_impl::socket_base_impl
     workContract_(std::move(workContract))
 {
     if (!set_socket_option(SOL_SOCKET, SO_REUSEADDR, 1))
-        ;//glimpse_warning << "socket::socket: failed to set sock option SO_REUSEADDR";
+        ;// TODO: log failure
     ipAddress_ = get_socket_name();
     set_synchronicity(config.synchronicityMode_);
 }
@@ -143,7 +143,7 @@ bool maniscalco::network::socket_base_impl::is_valid
 //=============================================================================
 auto maniscalco::network::socket_base_impl::get_file_descriptor
 (
-) const noexcept -> file_descriptor const & 
+) const noexcept -> system::file_descriptor const & 
 {
     return fileDescriptor_;
 }
@@ -170,13 +170,13 @@ auto maniscalco::network::socket_base_impl::get_id
 //=============================================================================
 bool maniscalco::network::socket_base_impl::set_synchronicity
 (
-    synchronicity_mode mode
+    system::synchronicity_mode mode
 )
 {
     auto flags = ::fcntl(fileDescriptor_.get(), F_GETFL, 0);
     if (flags == -1)
         return false;
-    if (mode == synchronicity_mode::blocking)
+    if (mode == system::synchronicity_mode::blocking)
     {
         // synchronous/blocking mode
         flags &= ~O_NONBLOCK;

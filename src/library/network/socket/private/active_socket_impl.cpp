@@ -28,7 +28,7 @@ maniscalco::network::active_socket_impl<P>::socket_impl
 template <maniscalco::network::network_transport_protocol P>
 maniscalco::network::active_socket_impl<P>::socket_impl
 (
-    file_descriptor fileDescriptor,
+    system::file_descriptor fileDescriptor,
     configuration const & config,
     event_handlers const & eventHandlers,
     system::work_contract_group & workContractGroup,
@@ -79,19 +79,12 @@ auto maniscalco::network::active_socket_impl<P>::connect_to
             mreq.imr_interface = in_addr_any;
             if (!set_socket_option(IPPROTO_IP, IP_ADD_MEMBERSHIP, mreq))
             {
-                ;// TODO : LOG - throw std::runtime_error(fmt::format("udp_socket::join_multicast_group: socket [{}] Failed to join multicast group {}", id_.get(), to_string(destination)));
+                // TODO: log failure
                 return connect_result::connect_error;
             }
             connectedIpAddress_ = destination;
             return connect_result::success;
         }
-/*
-        ::ip_mreq mreq;
-        ::memset(&mreq, 0x00, sizeof(mreq));
-        mreq.imr_multiaddr.s_addr = previousConnectedIpAddress.get_network_id();
-        mreq.imr_interface.s_addr = endian_swap<std::endian::native, std::endian::big>(INADDR_ANY);
-        auto success = set_socket_option(IPPROTO_IP, IP_DROP_MEMBERSHIP, mreq);
-*/
     }
     else
     {
@@ -128,7 +121,7 @@ bool maniscalco::network::active_socket_impl<P>::disconnect
             mreq.imr_interface = in_addr_any;
             if (!set_socket_option(IPPROTO_IP, IP_DROP_MEMBERSHIP, mreq))
             {
-                ;// TODO : LOG - throw std::runtime_error(fmt::format("udp_socket::join_multicast_group: socket [{}] Failed to join multicast group {}", id_.get(), to_string(destination)));
+                // TODO: log failure
                 return false;
             }
             connectedIpAddress_ = {};
@@ -149,7 +142,7 @@ std::span<char const> maniscalco::network::active_socket_impl<P>::send
     auto result = ::send(fileDescriptor_.get(), data.data(), data.size(), MSG_NOSIGNAL);
     if ((result < 0) && (errno != EAGAIN))
     {
-        ;//on_send_error(result);
+        // TODO: log/maybe forward error
         return data;
     }
     return data.subspan(result);
@@ -171,7 +164,6 @@ std::vector<std::uint8_t> maniscalco::network::active_socket_impl<P>::receive
         buffer.resize(result);
         receiveHandler_(id_, std::move(buffer));
         on_polled(); // there could be more ...
-    //    std::cout << "received " << buffer.size() << " bytes\n";
         return buffer;
     }
     if (result == EAGAIN)

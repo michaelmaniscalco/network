@@ -44,7 +44,7 @@ namespace maniscalco::network
 
         bool unregister_socket
         (
-            file_descriptor const &
+            system::file_descriptor const &
         );
 
         void poll();
@@ -53,7 +53,7 @@ namespace maniscalco::network
 
     private:
 
-        file_descriptor     fileDescriptor_;
+        system::file_descriptor     fileDescriptor_;
 
         trigger_type        trigger_;
 

@@ -30,7 +30,7 @@ maniscalco::network::active_socket<P>::socket
 template <maniscalco::network::network_transport_protocol P>
 maniscalco::network::active_socket<P>::socket
 (
-    file_descriptor fileDescriptor,
+    system::file_descriptor fileDescriptor,
     configuration const & config,
     event_handlers const & eventHandlers,
     system::work_contract_group & workContractGroup,

@@ -25,7 +25,7 @@ namespace maniscalco::network
 
         struct event_handlers : socket_base_impl::event_handlers
         {
-            using accept_handler = std::function<void(socket_id, file_descriptor)>;
+            using accept_handler = std::function<void(socket_id, system::file_descriptor)>;
 
             accept_handler acceptHandler_;
         };

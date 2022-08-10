@@ -31,14 +31,14 @@ namespace maniscalco::network
 
         struct configuration
         {
-            synchronicity_mode synchronicityMode_{synchronicity_mode::non_blocking};
+            system::synchronicity_mode synchronicityMode_{system::synchronicity_mode::non_blocking};
         };
 
         socket_base_impl
         (
             configuration const &,
             event_handlers const &,
-            file_descriptor,
+            system::file_descriptor,
             system::work_contract
         ) noexcept;
 
@@ -47,7 +47,7 @@ namespace maniscalco::network
             ip_address,
             configuration const &,
             event_handlers const &,
-            file_descriptor,
+            system::file_descriptor,
             system::work_contract
         ) noexcept;
 
@@ -57,7 +57,7 @@ namespace maniscalco::network
 
         bool is_valid() const noexcept;
 
-        file_descriptor const & get_file_descriptor() const noexcept;
+        system::file_descriptor const & get_file_descriptor() const noexcept;
         
         ip_address get_ip_address() const noexcept;
 
@@ -70,7 +70,7 @@ namespace maniscalco::network
 
         bool set_synchronicity
         (
-            synchronicity_mode
+            system::synchronicity_mode
         );
 
         void on_polled();
@@ -90,7 +90,7 @@ namespace maniscalco::network
 
         ip_address get_socket_name() const noexcept;
 
-        file_descriptor                 fileDescriptor_;
+        system::file_descriptor                 fileDescriptor_;
 
         ip_address                      ipAddress_;
 

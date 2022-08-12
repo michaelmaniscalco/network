@@ -24,7 +24,7 @@ namespace maniscalco::network
         ip_address(ip_address &&) noexcept = default;
         ip_address & operator = (ip_address &&) noexcept = default;
 
-        constexpr ip_address
+        ip_address
         (
             network_id,
             port_id
@@ -67,7 +67,7 @@ namespace maniscalco::network
 
 
 //=============================================================================
-constexpr maniscalco::network::ip_address::ip_address
+inline maniscalco::network::ip_address::ip_address
 (
     network_id networkId,
     port_id portId

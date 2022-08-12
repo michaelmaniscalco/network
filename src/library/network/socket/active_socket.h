@@ -93,6 +93,14 @@ namespace maniscalco::network
 
         socket_id get_id() const;
         
+    
+        connect_result join
+        (
+            network_id
+        ) requires (P == network_transport_protocol::udp);
+
+        system::file_descriptor const & get_file_descriptor() const;
+
     private:
 
         using impl_type = socket_impl<traits>;

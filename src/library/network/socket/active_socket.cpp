@@ -73,6 +73,19 @@ auto maniscalco::network::active_socket<P>::connect_to
 
 //=============================================================================
 template <maniscalco::network::network_transport_protocol P>
+auto maniscalco::network::active_socket<P>::join
+(
+    network_id networkId
+) -> connect_result 
+requires (P == network_transport_protocol::udp)
+{
+    if (impl_)
+        return impl_->join(networkId);
+    return connect_result::connect_error;
+}
+
+//=============================================================================
+template <maniscalco::network::network_transport_protocol P>
 std::span<char const> maniscalco::network::active_socket<P>::send
 (
     std::span<char const> data

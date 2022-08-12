@@ -1,4 +1,5 @@
 add_library(network
+    ./network.cpp
     ./socket/socket_id.cpp
     ./ip/ip_address.cpp
     ./socket/active_socket.cpp

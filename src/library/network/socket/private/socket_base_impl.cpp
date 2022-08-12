@@ -25,22 +25,25 @@ maniscalco::network::socket_base_impl::socket_base_impl
 {
     if (!set_socket_option(SOL_SOCKET, SO_REUSEADDR, 1))
         ;// TODO: log failure
-    ipAddress_ = get_socket_name();
-    auto bindResult = bind(ipAddress);
-    switch (bindResult)
+    if (!ipAddress.is_multicast())
     {
-        case bind_result::success:
+        auto bindResult = bind(ipAddress);
+        switch (bindResult)
         {
-            break;
+            case bind_result::success:
+            {
+                break;
+            }
+            case bind_result::undefined:
+            case bind_result::bind_error:
+            case bind_result::invalid_file_descriptor:
+            {
+                // log here
+                fileDescriptor_ = {};
+                break;
+            }
         }
-        case bind_result::undefined:
-        case bind_result::bind_error:
-        case bind_result::invalid_file_descriptor:
-        {
-            // log here
-            fileDescriptor_ = {};
-            break;
-        }
+        ipAddress_ = get_socket_name();
     }
     set_synchronicity(config.synchronicityMode_);
 }

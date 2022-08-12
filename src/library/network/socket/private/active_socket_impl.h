@@ -70,6 +70,11 @@ namespace maniscalco::network
 
         ip_address get_connected_ip_address() const noexcept;
 
+        connect_result join
+        (
+            network_id
+        ) requires (P == network_transport_protocol::udp);
+
     private:
 
         ip_address get_peer_name() const noexcept;

@@ -1,5 +1,10 @@
 #include "./active_socket_impl.h"
 
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+
 
 //=============================================================================
 template <maniscalco::network::network_transport_protocol P>
@@ -63,39 +68,47 @@ auto maniscalco::network::active_socket_impl<P>::connect_to
     if (is_connected())
         return connect_result::already_connected;
 
-    if (destination.is_multicast())
+    ::sockaddr_in socketAddress = destination;
+    socketAddress.sin_family = AF_INET;
+    auto result = ::connect(fileDescriptor_.get(), (sockaddr const *)&socketAddress, sizeof(socketAddress));
+    if ((result != 0) && (errno != EINPROGRESS))
+        return connect_result::connect_error;
+    connectedIpAddress_ = destination;
+
+    set_socket_option(IPPROTO_IP, IP_MULTICAST_TTL, 8);
+    return connect_result::success;
+}
+
+
+//=============================================================================
+template <maniscalco::network::network_transport_protocol P>
+auto maniscalco::network::active_socket_impl<P>::join
+(
+    network_id networkId
+) -> connect_result
+requires (P == network_transport_protocol::udp)
+{
+    if (!networkId.is_valid())
+        return connect_result::invalid_destination;
+
+    if (!fileDescriptor_.is_valid())
+        return connect_result::invalid_file_descriptor;
+
+    if (is_connected())
+        return connect_result::already_connected;
+
+    // join multicast
+    ::ip_mreq mreq;
+    ::memset(&mreq, 0x00, sizeof(mreq));
+    mreq.imr_multiaddr = networkId;
+    mreq.imr_interface = in_addr_any;
+    if (!set_socket_option(IPPROTO_IP, IP_ADD_MEMBERSHIP, mreq))
     {
-        if constexpr (P != network_transport_protocol::udp)
-        {
-            // only for udp
-            return connect_result::connect_error;
-        }
-        else
-        {
-            // join multicast
-            ::ip_mreq mreq;
-            ::memset(&mreq, 0x00, sizeof(mreq));
-            mreq.imr_multiaddr = destination.get_network_id();
-            mreq.imr_interface = in_addr_any;
-            if (!set_socket_option(IPPROTO_IP, IP_ADD_MEMBERSHIP, mreq))
-            {
-                // TODO: log failure
-                return connect_result::connect_error;
-            }
-            connectedIpAddress_ = destination;
-            return connect_result::success;
-        }
+        // TODO: log failure
+        return connect_result::connect_error;
     }
-    else
-    {
-        ::sockaddr_in socketAddress = destination;
-        socketAddress.sin_family = AF_INET;
-        auto result = ::connect(fileDescriptor_.get(), (sockaddr const *)&socketAddress, sizeof(socketAddress));
-        if ((result != 0) && (errno != EINPROGRESS))
-            return connect_result::connect_error;
-        connectedIpAddress_ = destination;
-        return connect_result::success;
-    }
+    connectedIpAddress_ = {networkId, port_id{0}};
+    return connect_result::success;
 }
 
 

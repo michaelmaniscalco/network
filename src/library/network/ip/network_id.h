@@ -6,7 +6,10 @@
 
 #include <cstdint>
 #include <string>
+#include <string_view>
 #include <netinet/in.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
 
 #include <iostream>
 
@@ -25,6 +28,17 @@ namespace maniscalco::network
         network_id & operator = (network_id const &) noexcept = default;
         network_id(network_id &&) noexcept = default;
         network_id & operator = (network_id &&) noexcept = default;
+
+        template <std::size_t N>
+        network_id
+        (
+            char const (&)[N]
+        ) noexcept;
+
+        network_id  
+        (
+            std::string const &
+        ) noexcept;
 
         explicit constexpr network_id
         (
@@ -102,6 +116,27 @@ constexpr maniscalco::network::network_id::network_id
     ::in_addr inAddr
 ) noexcept :
     value_(endian_swap<std::endian::big, std::endian::native>(inAddr.s_addr))
+{
+}
+
+
+//=============================================================================
+inline maniscalco::network::network_id::network_id  
+(
+    std::string const & value
+) noexcept :
+    network_id(endian_swap<std::endian::big, std::endian::native>(::inet_addr(value.c_str())))
+{
+}
+
+
+//=============================================================================
+template <std::size_t N>
+inline maniscalco::network::network_id::network_id
+( 
+    char const (&value)[N]
+) noexcept:
+    network_id(endian_swap<std::endian::big, std::endian::native>(::inet_addr(value)))
 {
 }
 

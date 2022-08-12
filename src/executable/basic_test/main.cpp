@@ -15,13 +15,13 @@ namespace
 
     using namespace maniscalco::network;
     using namespace maniscalco::system;
-
+    using namespace std::string_literals;
     std::mutex mutex;
 
     std::map<socket_id, tcp_socket> acceptedTcpSockets;
 
-    static ip_address constexpr any_local_ip_address{local_host, port_id_any};
-    static ip_address constexpr tcp_listener_ip_address{local_host, port_id(3000)};
+    static ip_address const any_loopback_ip_address{"127.0.0.1", port_id_any};
+    static ip_address const tcp_listener_ip_address{"127.0.0.1"s, port_id(3000)};
 
     // set up work contract group
     auto workContractGroup = work_contract_group::create({});
@@ -84,8 +84,8 @@ void demonstrate_udp_sockets
 )
 {
     std::cout << "*** UDP demonstration ***\n";
-    auto udpSocket1 = networkInterface.open_socket<udp_socket>(any_local_ip_address, {}, {.closeHandler_ = closeHandler, .receiveHandler_ = receiveHandler});
-    auto udpSocket2 = networkInterface.open_socket<udp_socket>(any_local_ip_address, {}, {.closeHandler_ = closeHandler, .receiveHandler_ = receiveHandler});
+    auto udpSocket1 = networkInterface.open_socket<udp_socket>(any_loopback_ip_address, {}, {.closeHandler_ = closeHandler, .receiveHandler_ = receiveHandler});
+    auto udpSocket2 = networkInterface.open_socket<udp_socket>(any_loopback_ip_address, {}, {.closeHandler_ = closeHandler, .receiveHandler_ = receiveHandler});
 
     udpSocket1.connect_to(udpSocket2.get_ip_address());
     udpSocket2.connect_to(udpSocket1.get_ip_address());
@@ -101,6 +101,41 @@ void demonstrate_udp_sockets
 
 
 //=============================================================================
+void demonstrate_udp_multicast_sockets
+(
+    // NOTE: multicast demo will require that the "239.54.12.234" exists.
+    // To determine (on linux) use "sudo ip address" to list all ip addresses.
+    // If "239.54.12.234" does not exist you can add it with "sudo ip addr add 239.54.12.234/32 dev [your_interface]"
+    // Then this demo should work correctly.
+    // To remove the ip after the demo "sudo ip addr del 239.54.12.234/32 dev [your_interface]"
+    // see README for more details
+)
+{
+    network_id multicastNetworkId{"239.54.12.234"};
+    port_id multicastPortId{22001};
+
+    std::cout << "*** Multicast UDP demonstration ***\n";
+    auto udpSocket1 = networkInterface.open_socket<udp_socket>(any_loopback_ip_address, {}, {.closeHandler_ = closeHandler, .receiveHandler_ = receiveHandler});
+
+    udpSocket1.connect_to(ip_address{multicastNetworkId, multicastPortId});
+
+    static auto constexpr number_of_receivers = 10;
+    std::array<udp_socket, number_of_receivers> receivers;
+    for (auto & receiver : receivers)
+    {
+        receiver = networkInterface.open_socket<udp_socket>(ip_address{in_addr_any, multicastPortId}, {}, {.closeHandler_ = closeHandler, .receiveHandler_ = receiveHandler});
+        receiver.join(multicastNetworkId);
+    }
+
+    for (auto i = 0; i < 10; ++i)
+    {
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+        udpSocket1.send("this is a multicast message");
+    }
+}
+
+
+//=============================================================================
 void demonstrate_tcp_sockets
 (
     // create tcp listener socket
@@ -112,7 +147,7 @@ void demonstrate_tcp_sockets
 {
     std::cout << "*** TCP demonstration ***\n";
     auto tcpListenerSocket = networkInterface.open_socket<tcp_listener_socket>(tcp_listener_ip_address, {}, {.closeHandler_ = closeHandler, .acceptHandler_ = acceptHandler});
-    auto tcpSocket = networkInterface.open_socket<tcp_socket>(any_local_ip_address, {}, {.closeHandler_ = closeHandler, .receiveHandler_ = receiveHandler});
+    auto tcpSocket = networkInterface.open_socket<tcp_socket>(any_loopback_ip_address, {}, {.closeHandler_ = closeHandler, .receiveHandler_ = receiveHandler});
 
     tcpSocket.connect_to(tcp_listener_ip_address);
     tcpSocket.send("greetings partner!");
@@ -129,7 +164,6 @@ int main
     char **
 )
 {
-
     // set up thread pool to process work contracts
     static auto constexpr num_worker_threads = 4;
     std::vector<thread_pool::thread_configuration> threads;
@@ -146,6 +180,9 @@ int main
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
     demonstrate_udp_sockets();
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+    demonstrate_udp_multicast_sockets();
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
     return 0;

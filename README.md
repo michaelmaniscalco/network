@@ -1,10 +1,12 @@
 # network
 async network library using work contracts
-WIP - multicast is not ready yet. lots of logging and error handling to be added
+
+currently supports async receive for udp and tcp, async accept for listener sockets and multicast.
+definitely a work in progress as there are plenty of features yet to add.
 
 
 
-# multicast example
+# NOTES on the multicast example
 The multicast example relies on the ip address `239.54.12.234`.  It will not work without it.
 If you want to run this example check for the `239.54.12.234` using `ip address` to list
 all interfaces and ip addresses.

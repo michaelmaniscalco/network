@@ -1,14 +1,12 @@
 # network
 async network library using work contracts
-
-currently supports async receive for udp and tcp, async accept for listener sockets and multicast.
-definitely a work in progress as there are plenty of features yet to add.
+WIP - multicast is not ready yet. lots of logging and error handling to be added
 
 
 
-# NOTES on the multicast example
-The multicast example relies on the ip address `239.54.12.234`.  It will not work without it.
-If you want to run this example check for the `239.54.12.234` using `ip address` to list
+# multicast example
+The multicast example relies on the ip address `239.0.0.1`.  It will not work without it.
+If you want to run this example check for the `239.0.0.1` using `ip address` to list
 all interfaces and ip addresses.
 
 Example:
@@ -25,13 +23,13 @@ Example:
 </SNIP>
 ```
 
-To add `239.54.12.234`:  (in my case to interface `wlp5s0`)
+To add `239.0.0.1`:  (in my case to interface `wlp5s0`)
 
 ```
-~$ sudo ip addr add 239.54.12.234/32 dev wlp5s0 
+~$ sudo ip addr add 239.0.0.1/32 dev wlp5s0 
 ```
 
-Verify that `239.54.12.234` now exits:
+Verify that `239.0.0.1` now exits:
 
 ```
 $ ip address
@@ -40,7 +38,7 @@ $ ip address
     link/ether 78:2b:46:c4:2b:1a brd ff:ff:ff:ff:ff:ff
     inet 192.168.1.161/24 brd 192.168.1.255 scope global dynamic noprefixroute wlp5s0
        valid_lft 84116sec preferred_lft 84116sec
-    inet 239.54.12.234/32 scope global wlp5s0                             <----- ip was added
+    inet 239.0.0.1/32 scope global wlp5s0                             <----- ip was added
        valid_lft forever preferred_lft forever
     inet6 fe80::bc1b:2eed:74d2:9c7c/64 scope link noprefixroute 
        valid_lft forever preferred_lft forever
@@ -49,8 +47,8 @@ $ ip address
 
 The multicast demo should now (hopefully) function correctly.
 
-To remove `239.54.12.234`: (in my case from interface `wlp5s0`)
+To remove `239.0.0.1`: (in my case from interface `wlp5s0`)
 
 ```
-~$ sudo ip addr del 239.54.12.234/32 dev wlp5s0
+~$ sudo ip addr del 239.0.0.1/32 dev wlp5s0
 ```

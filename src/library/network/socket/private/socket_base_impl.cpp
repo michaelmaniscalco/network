@@ -45,7 +45,8 @@ maniscalco::network::socket_base_impl::socket_base_impl
         }
         ipAddress_ = get_socket_name();
     }
-    set_synchronicity(config.synchronicityMode_);
+    set_synchronicity(system::synchronicity_mode::non_blocking);
+    set_io_mode(config.ioMode_);
 }
 
 
@@ -64,7 +65,8 @@ maniscalco::network::socket_base_impl::socket_base_impl
     if (!set_socket_option(SOL_SOCKET, SO_REUSEADDR, 1))
         ;// TODO: log failure
     ipAddress_ = get_socket_name();
-    set_synchronicity(config.synchronicityMode_);
+    set_synchronicity(system::synchronicity_mode::non_blocking);
+    set_io_mode(config.ioMode_);
 }
 
 
@@ -174,7 +176,7 @@ auto maniscalco::network::socket_base_impl::get_id
 bool maniscalco::network::socket_base_impl::set_synchronicity
 (
     system::synchronicity_mode mode
-)
+) noexcept
 {
     auto flags = ::fcntl(fileDescriptor_.get(), F_GETFL, 0);
     if (flags == -1)
@@ -193,4 +195,65 @@ bool maniscalco::network::socket_base_impl::set_synchronicity
     if (fcntlResult != 0)
         return false;
     return true; 
+}
+
+
+//=============================================================================
+bool maniscalco::network::socket_base_impl::set_io_mode
+(
+    system::io_mode ioMode
+) noexcept
+{
+    switch (ioMode)
+    {
+        case system::io_mode::read:
+        {
+            return shutdown(system::io_mode::write);
+        }
+        case system::io_mode::write:
+        {
+            return shutdown(system::io_mode::read);
+        }
+        case system::io_mode::read_write:
+        {
+            return shutdown(system::io_mode::none);
+        }
+        case system::io_mode::none:
+        {
+            return shutdown(system::io_mode::read_write);
+        }
+        default:
+        {
+            return true;
+        }
+    }
+}
+
+
+//=============================================================================
+bool maniscalco::network::socket_base_impl::shutdown
+(
+    system::io_mode ioMode
+) noexcept
+{
+    switch (ioMode)
+    {
+        case system::io_mode::read:
+        {
+            return (::shutdown(fileDescriptor_.get(), SHUT_RD) == 0);
+        }
+        case system::io_mode::write:
+        {
+            return (::shutdown(fileDescriptor_.get(), SHUT_WR) == 0);
+        }
+        case system::io_mode::read_write:
+        {
+            return (::shutdown(fileDescriptor_.get(), SHUT_RDWR) == 0);
+        }
+        case system::io_mode::none:
+        default:
+        {
+            return true;
+        }
+    }
 }

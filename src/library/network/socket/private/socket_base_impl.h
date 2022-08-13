@@ -7,6 +7,7 @@
 
 #include <library/network/ip/ip_address.h>
 #include <include/file_descriptor.h>
+#include <include/io_mode.h>
 #include <include/synchronicity_mode.h>
 
 #include <library/system.h>
@@ -31,7 +32,7 @@ namespace maniscalco::network
 
         struct configuration
         {
-            system::synchronicity_mode synchronicityMode_{system::synchronicity_mode::non_blocking};
+            system::io_mode ioMode_{system::io_mode::read_write};
         };
 
         socket_base_impl
@@ -63,6 +64,11 @@ namespace maniscalco::network
 
         socket_id get_id() const noexcept;
 
+        bool set_io_mode
+        (
+            system::io_mode
+        ) noexcept;
+
     protected:
 
         // unfortunate
@@ -71,7 +77,12 @@ namespace maniscalco::network
         bool set_synchronicity
         (
             system::synchronicity_mode
-        );
+        ) noexcept;
+
+        bool shutdown
+        (
+            system::io_mode
+        ) noexcept;
 
         void on_polled();
 

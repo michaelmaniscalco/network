@@ -4,9 +4,10 @@
 #include "./traits/traits.h"
 #include "./return_code/connect_result.h"
 #include "./return_code/bind_result.h"
-#include <include/file_descriptor.h>
 #include <library/network/ip/ip_address.h>
 
+#include <include/file_descriptor.h>
+#include <include/io_mode.h>
 #include <library/system.h>
 
 #include <functional>
@@ -39,8 +40,10 @@ namespace maniscalco::network
 
         struct configuration
         {
+            std::size_t receiveBufferSize_{0};
+            std::size_t sendBufferSize_{0};
+            system::io_mode ioMode_{system::io_mode::read_write};
         };
-
 
         socket(socket const &) = delete;
         socket & operator = (socket const &) = delete;
@@ -93,13 +96,23 @@ namespace maniscalco::network
 
         socket_id get_id() const;
         
-    
         connect_result join
         (
             network_id
         ) requires (P == network_transport_protocol::udp);
 
         system::file_descriptor const & get_file_descriptor() const;
+
+        bool set_read_only() noexcept;
+
+        bool set_write_only() noexcept;
+
+        bool set_read_write() noexcept;
+
+        bool set_io_mode
+        (
+            system::io_mode
+        ) noexcept;
 
     private:
 

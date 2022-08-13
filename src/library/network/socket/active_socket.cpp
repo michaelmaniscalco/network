@@ -16,7 +16,11 @@ maniscalco::network::active_socket<P>::socket
 {
     impl_ = std::move(decltype(impl_)(new impl_type(
             ipAddress, 
-            {}, // TODO: copy fields from config when available 
+            {
+                .receiveBufferSize_ = config.receiveBufferSize_,
+                .sendBufferSize_ = config.sendBufferSize_,
+                .ioMode_ = config.ioMode_
+            },
             {
                 eventHandlers.closeHandler_,
                 eventHandlers.receiveHandler_
@@ -39,7 +43,11 @@ maniscalco::network::active_socket<P>::socket
 {
     impl_ = std::move(decltype(impl_)(new impl_type(
             std::move(fileDescriptor), 
-            {}, // TODO: copy fields from config when available 
+            {
+                .receiveBufferSize_ = config.receiveBufferSize_,
+                .sendBufferSize_ = config.sendBufferSize_,
+                .ioMode_ = config.ioMode_
+            },
             {
                 eventHandlers.closeHandler_,
                 eventHandlers.receiveHandler_
@@ -178,6 +186,49 @@ auto maniscalco::network::active_socket<P>::get_id
     if (impl_)
         return impl_->get_id();
     return {};
+}
+
+
+//=============================================================================
+template <maniscalco::network::network_transport_protocol P>
+bool maniscalco::network::active_socket<P>::set_read_only
+(
+) noexcept
+{
+    return set_io_mode(system::io_mode::read);
+}
+
+
+//=============================================================================
+template <maniscalco::network::network_transport_protocol P>
+bool maniscalco::network::active_socket<P>::set_write_only
+(
+) noexcept
+{
+    return set_io_mode(system::io_mode::write);
+}
+
+
+//=============================================================================
+template <maniscalco::network::network_transport_protocol P>
+bool maniscalco::network::active_socket<P>::set_read_write
+(
+) noexcept
+{
+    return set_io_mode(system::io_mode::read_write);
+}
+
+
+//=============================================================================
+template <maniscalco::network::network_transport_protocol P>
+bool maniscalco::network::active_socket<P>::set_io_mode
+(
+    system::io_mode ioMode
+) noexcept
+{
+    if (impl_)
+        return impl_->set_io_mode(ioMode);
+    return false;
 }
 
 

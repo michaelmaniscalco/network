@@ -16,7 +16,7 @@ maniscalco::network::active_socket_impl<P>::socket_impl
     system::work_contract_group & workContractGroup,
     poller & p
 ):    
-    socket_base_impl(ipAddress, config, eventHandlers, 
+    socket_base_impl(ipAddress, {.ioMode_ = config.ioMode_}, eventHandlers, 
             (P == network_transport_protocol::udp) ? ::socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP) : ::socket(PF_INET, SOCK_STREAM, IPPROTO_TCP),
             workContractGroup.create_contract(
             {
@@ -26,6 +26,10 @@ maniscalco::network::active_socket_impl<P>::socket_impl
     pollerRegistration_(p.register_socket(*this)),
     receiveHandler_(eventHandlers.receiveHandler_)    
 {
+    if (config.receiveBufferSize_ > 0)
+        set_socket_option(SOL_SOCKET, SO_RCVBUF, config.receiveBufferSize_);
+    if (config.sendBufferSize_ > 0)
+        set_socket_option(SOL_SOCKET, SO_SNDBUF, config.sendBufferSize_);
 }
 
 
@@ -38,8 +42,8 @@ maniscalco::network::active_socket_impl<P>::socket_impl
     event_handlers const & eventHandlers,
     system::work_contract_group & workContractGroup,
     poller & p
-):    
-    socket_base_impl(config, eventHandlers, std::move(fileDescriptor),
+):
+    socket_base_impl({.ioMode_ = config.ioMode_}, eventHandlers, std::move(fileDescriptor),
             workContractGroup.create_contract(
             {
                 .contractHandler_ = [this](){this->receive();},
@@ -49,6 +53,10 @@ maniscalco::network::active_socket_impl<P>::socket_impl
     receiveHandler_(eventHandlers.receiveHandler_)    
 {
     connectedIpAddress_ = get_peer_name();
+    if (config.receiveBufferSize_ > 0)
+        set_socket_option(SOL_SOCKET, SO_RCVBUF, config.receiveBufferSize_);
+    if (config.sendBufferSize_ > 0)
+        set_socket_option(SOL_SOCKET, SO_SNDBUF, config.sendBufferSize_);
 }
 
 
@@ -108,6 +116,7 @@ requires (P == network_transport_protocol::udp)
         return connect_result::connect_error;
     }
     connectedIpAddress_ = {networkId, port_id{0}};
+    set_io_mode(system::io_mode::read);
     return connect_result::success;
 }
 

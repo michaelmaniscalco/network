@@ -5,6 +5,7 @@
 
 #include "./socket_base_impl.h"
 
+#include <include/io_mode.h>
 #include <library/system.h>
 
 #include <functional>
@@ -29,9 +30,11 @@ namespace maniscalco::network
             receive_handler receiveHandler_;
         };
 
-        struct configuration : socket_base_impl::configuration
+        struct configuration
         {
-            std::uint32_t backlog_;
+            std::size_t     receiveBufferSize_{0};
+            std::size_t     sendBufferSize_{0};
+            system::io_mode ioMode_{system::io_mode::read_write};
         };
 
         socket_impl

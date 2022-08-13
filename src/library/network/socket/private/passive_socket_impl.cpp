@@ -11,7 +11,7 @@ maniscalco::network::passive_socket_impl<P>::socket_impl
     system::work_contract_group & workContractGroup,
     poller & p
 ):    
-    socket_base_impl(ipAddress, config, eventHandlers, ::socket(PF_INET, SOCK_STREAM, IPPROTO_TCP),
+    socket_base_impl(ipAddress, {.ioMode_ = config.ioMode_}, eventHandlers, ::socket(PF_INET, SOCK_STREAM, IPPROTO_TCP),
             workContractGroup.create_contract(
             {
                 .contractHandler_ = [this](){this->accept();},

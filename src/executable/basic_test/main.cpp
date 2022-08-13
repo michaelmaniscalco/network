@@ -97,40 +97,40 @@ void demonstrate_udp_sockets
     udpSocket1.send("guess why");
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
     udpSocket2.send("chicken thigh!!!");
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
 }
 
 
 //=============================================================================
 void demonstrate_udp_multicast_sockets
 (
-    // NOTE: multicast demo will require that the "239.54.12.234" exists.
-    // To determine (on linux) use "sudo ip address" to list all ip addresses.
-    // If "239.54.12.234" does not exist you can add it with "sudo ip addr add 239.54.12.234/32 dev [your_interface]"
-    // Then this demo should work correctly.
-    // To remove the ip after the demo "sudo ip addr del 239.54.12.234/32 dev [your_interface]"
+    // NOTE: multicast demo will require that the "239.0.0.1" ip address exists.
     // see README for more details
 )
 {
-    network_id multicastNetworkId{"239.54.12.234"};
-    port_id multicastPortId{22001};
+    network_id multicastNetworkId{"239.0.0.1"};
+    port_id multicastPortId{3000};
 
     std::cout << "*** Multicast UDP demonstration ***\n";
-    auto udpSocket1 = networkInterface.open_socket<udp_socket>(any_loopback_ip_address, {}, {.closeHandler_ = closeHandler, .receiveHandler_ = receiveHandler});
-
-    udpSocket1.connect_to(ip_address{multicastNetworkId, multicastPortId});
+    auto sender = networkInterface.open_socket<udp_socket>(any_loopback_ip_address, {}, {.closeHandler_ = closeHandler, .receiveHandler_ = receiveHandler});
+    sender.connect_to(ip_address{multicastNetworkId, multicastPortId});
 
     static auto constexpr number_of_receivers = 10;
-    std::array<udp_socket, number_of_receivers> receivers;
+    std::vector<udp_socket> receivers(number_of_receivers);
     for (auto & receiver : receivers)
     {
+        // open udp socket and then join the multicast.
         receiver = networkInterface.open_socket<udp_socket>(ip_address{in_addr_any, multicastPortId}, {}, {.closeHandler_ = closeHandler, .receiveHandler_ = receiveHandler});
         receiver.join(multicastNetworkId);
+        // this can also be done in one step with:
+        // receiver = networkInterface.join_multicast(ip_address{in_addr_any, multicastPortId}, {}, {.closeHandler_ = closeHandler, .receiveHandler_ = receiveHandler}, multicastNetworkId);
     }
+    
 
     for (auto i = 0; i < 10; ++i)
     {
-        std::this_thread::sleep_for(std::chrono::seconds(1));
-        udpSocket1.send("this is a multicast message");
+        sender.send("this is a multicast message");
+        std::this_thread::sleep_for(std::chrono::milliseconds(300));
     }
 }
 
@@ -145,9 +145,19 @@ void demonstrate_tcp_sockets
     // send messages back and forth across partnered tcp sockets
 )
 {
+    using namespace maniscalco::system;
+
     std::cout << "*** TCP demonstration ***\n";
     auto tcpListenerSocket = networkInterface.open_socket<tcp_listener_socket>(tcp_listener_ip_address, {}, {.closeHandler_ = closeHandler, .acceptHandler_ = acceptHandler});
-    auto tcpSocket = networkInterface.open_socket<tcp_socket>(any_loopback_ip_address, {}, {.closeHandler_ = closeHandler, .receiveHandler_ = receiveHandler});
+    auto tcpSocket = networkInterface.open_socket<tcp_socket>(any_loopback_ip_address, 
+            {
+                .receiveBufferSize_ = (1 << 20), // demonstrate setting send/receive buffer sizes (works for udp as well)
+                .sendBufferSize_ = (1 << 20)
+            }, 
+            {
+                .closeHandler_ = closeHandler, 
+                .receiveHandler_ = receiveHandler
+            });
 
     tcpSocket.connect_to(tcp_listener_ip_address);
     tcpSocket.send("greetings partner!");

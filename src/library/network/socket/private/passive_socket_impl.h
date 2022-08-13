@@ -30,9 +30,11 @@ namespace maniscalco::network
             accept_handler acceptHandler_;
         };
 
-        struct configuration : socket_base_impl::configuration
+        struct configuration
         {
+            system::synchronicity_mode synchronicityMode_{system::synchronicity_mode::non_blocking};
             std::uint32_t backlog_;
+            system::io_mode ioMode_{system::io_mode::read_write};
         };
 
         socket_impl

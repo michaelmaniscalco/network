@@ -1,5 +1,5 @@
 # network [WIP] - a simple, easy to use async network library using work contracts
-lots of logging and error handling to be added
+lots of logging, documentation and error handling to be added
 
 
 # notes on the multicast example

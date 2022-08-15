@@ -1,3 +1,3 @@
 if (NETWORK_BUILD_DEMO)
-    add_subdirectory(basic_test)
+    add_subdirectory(network_demo)
 endif()

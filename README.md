@@ -1,10 +1,8 @@
-# network
-async network library using work contracts
-WIP - multicast is not ready yet. lots of logging and error handling to be added
+# network [WIP] - a simple, easy to use async network library using work contracts
+lots of logging, documentation and error handling to be added
 
 
-
-# multicast example
+# notes on the multicast example
 The multicast example relies on the ip address `239.0.0.1`.  It will not work without it.
 If you want to run this example check for the `239.0.0.1` using `ip address` to list
 all interfaces and ip addresses.

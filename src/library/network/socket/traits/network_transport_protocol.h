@@ -14,11 +14,11 @@ namespace maniscalco::network
     };
 
     //=========================================================================
-    template <typename T>
-    concept udp_protocol_concept = std::is_same_v<T, network_transport_protocol::udp>;
+    template <network_transport_protocol T>
+    concept udp_protocol_concept = (T == network_transport_protocol::udp);
 
     //=========================================================================
-    template <typename T>
-    concept tcp_protocol_concept = std::is_same_v<T, network_transport_protocol::tcp>;
+    template <network_transport_protocol T>
+    concept tcp_protocol_concept = (T == network_transport_protocol::tcp);
     
 } // namespace maniscalco::network

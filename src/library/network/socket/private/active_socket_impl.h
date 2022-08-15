@@ -76,7 +76,7 @@ namespace maniscalco::network
         connect_result join
         (
             network_id
-        ) requires (P == network_transport_protocol::udp);
+        );
 
     private:
 
@@ -88,7 +88,7 @@ namespace maniscalco::network
 
         poller_registration             pollerRegistration_;
 
-        event_handlers::receive_handler receiveHandler_;
+        typename event_handlers::receive_handler receiveHandler_;
 
     }; // class socket_impl<socket_traits<P, socket_type::active>>
 

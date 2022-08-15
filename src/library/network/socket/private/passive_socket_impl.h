@@ -54,7 +54,7 @@ namespace maniscalco::network
 
         poller_registration    pollerRegistration_;
 
-        event_handlers::accept_handler acceptHandler_;
+        typename event_handlers::accept_handler acceptHandler_;
 
     }; // namespace socket_impl<passive_socket_traits_concept> 
 

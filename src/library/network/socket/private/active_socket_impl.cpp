@@ -89,12 +89,22 @@ auto maniscalco::network::active_socket_impl<P>::connect_to
 
 
 //=============================================================================
-template <maniscalco::network::network_transport_protocol P>
-auto maniscalco::network::active_socket_impl<P>::join
+template <>
+auto maniscalco::network::tcp_socket_impl::join
 (
     network_id networkId
 ) -> connect_result
-requires (P == network_transport_protocol::udp)
+{
+    return connect_result::connect_error;
+}
+
+
+//=============================================================================
+template <>
+auto maniscalco::network::udp_socket_impl::join
+(
+    network_id networkId
+) -> connect_result
 {
     if (!networkId.is_valid())
         return connect_result::invalid_destination;

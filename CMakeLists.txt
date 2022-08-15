@@ -35,6 +35,8 @@ message("Build Type = ${CMAKE_BUILD_TYPE}")
 
 option(NETWORK_BUILD_DEMO "Build tests" ON)
 
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/${PROJECT_NAME})
+
 add_subdirectory(src)
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)

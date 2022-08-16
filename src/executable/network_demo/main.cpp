@@ -178,12 +178,12 @@ int main
     static auto constexpr num_worker_threads = 4;
     std::vector<thread_pool::thread_configuration> threads;
     for (auto i = 0; i < num_worker_threads; ++i)
-        threads.push_back({.function_ = [&]()
+        threads.push_back({.function_ = [&](std::stop_token const &)
                 {
                     workContractGroup->service_contracts();
                 }});
     // add one additional thread for polling
-    threads.push_back({.function_ = [&](){networkInterface.poll();}});
+    threads.push_back({.function_ = [&](std::stop_token const &){networkInterface.poll();}});
     thread_pool workerThreadPool({.threads_ = threads});
 
     demonstrate_tcp_sockets();

@@ -12,6 +12,9 @@
 
 #include <library/system.h>
 
+#include <include/non_copyable.h>
+#include <include/non_movable.h>
+
 #include <functional>
 
 
@@ -19,7 +22,9 @@ namespace maniscalco::network
 {
 
     //=========================================================================
-    class socket_base_impl
+    class socket_base_impl :
+        public non_copyable,
+        public non_movable
     {
     public:
 
@@ -101,7 +106,7 @@ namespace maniscalco::network
 
         ip_address get_socket_name() const noexcept;
 
-        system::file_descriptor                 fileDescriptor_;
+        system::file_descriptor         fileDescriptor_;
 
         ip_address                      ipAddress_;
 

@@ -24,7 +24,10 @@ maniscalco::network::active_socket_impl<P>::socket_impl
                 .endContractHandler_ = [this](){this->destroy();}
             })),
     pollerRegistration_(p.register_socket(*this)),
-    receiveHandler_(eventHandlers.receiveHandler_)    
+    receiveHandler_(eventHandlers.receiveHandler_),
+    receiveErrorHandler_(eventHandlers.receiveErrorHandler_),
+    packetAllocationHandler_(eventHandlers.packetAllocationHandler_ ? eventHandlers.packetAllocationHandler_ :
+            [](auto, auto desiredSize){return packet(desiredSize);})  
 {
     if (config.receiveBufferSize_ > 0)
         set_socket_option(SOL_SOCKET, SO_RCVBUF, config.receiveBufferSize_);
@@ -37,12 +40,14 @@ maniscalco::network::active_socket_impl<P>::socket_impl
 template <maniscalco::network::network_transport_protocol P>
 maniscalco::network::active_socket_impl<P>::socket_impl
 (
+    // this ctor is for 'accepted' tcp sockets where the socket file
+    // descriptor is created prior to the socket_impl
     system::file_descriptor fileDescriptor,
     configuration const & config,
     event_handlers const & eventHandlers,
     system::work_contract_group & workContractGroup,
     poller & p
-):
+) requires (tcp_protocol_concept<P>) :
     socket_base_impl({.ioMode_ = config.ioMode_}, eventHandlers, std::move(fileDescriptor),
             workContractGroup.create_contract(
             {
@@ -50,7 +55,10 @@ maniscalco::network::active_socket_impl<P>::socket_impl
                 .endContractHandler_ = [this](){this->destroy();}
             })),
     pollerRegistration_(p.register_socket(*this)),
-    receiveHandler_(eventHandlers.receiveHandler_)    
+    receiveHandler_(eventHandlers.receiveHandler_),
+    receiveErrorHandler_(eventHandlers.receiveErrorHandler_),
+    packetAllocationHandler_(eventHandlers.packetAllocationHandler_ ? eventHandlers.packetAllocationHandler_ :
+            [](auto, auto desiredSize){return packet(desiredSize);})    
 {
     connectedIpAddress_ = get_peer_name();
     if (config.receiveBufferSize_ > 0)
@@ -92,11 +100,8 @@ auto maniscalco::network::active_socket_impl<P>::connect_to
 template <>
 auto maniscalco::network::tcp_socket_impl::join
 (
-    network_id networkId
-) -> connect_result
-{
-    return connect_result::connect_error;
-}
+    network_id
+) -> connect_result = delete;
 
 
 //=============================================================================
@@ -137,16 +142,14 @@ bool maniscalco::network::active_socket_impl<P>::disconnect
 (
 )
 {
-    if (!is_connected())
-        return false;
-    if (!fileDescriptor_.is_valid())
+    if ((!is_connected()) ||(!fileDescriptor_.is_valid()))
         return false;
 
-    if (connectedIpAddress_.is_multicast())
+    if constexpr (P == network_transport_protocol::udp)
     {
-        if constexpr (P == network_transport_protocol::udp)
+        if (connectedIpAddress_.is_multicast())
         {
-            // drop multicast
+            // drop multicast membership
             ::ip_mreq mreq;
             ::memset(&mreq, 0x00, sizeof(mreq));
             mreq.imr_multiaddr = connectedIpAddress_.get_network_id();
@@ -166,42 +169,72 @@ bool maniscalco::network::active_socket_impl<P>::disconnect
 
 //=============================================================================
 template <maniscalco::network::network_transport_protocol P>
-std::span<char const> maniscalco::network::active_socket_impl<P>::send
+auto maniscalco::network::active_socket_impl<P>::send
 (
-    std::span<char const> data
-)
+    std::span<char const> buffer
+) -> send_result 
+requires (tcp_protocol_concept<P>) 
 {
-    auto result = ::send(fileDescriptor_.get(), data.data(), data.size(), MSG_NOSIGNAL);
-    if ((result < 0) && (errno != EAGAIN))
+    auto bytesToSend = buffer.size();
+    while (!buffer.empty())
     {
-        // TODO: log/maybe forward error
-        return data;
+        auto result = ::send(fileDescriptor_.get(), buffer.data(), buffer.size(), MSG_NOSIGNAL);
+        if (result < 0)
+        {
+            if (result != EAGAIN)
+                return {result, bytesToSend - buffer.size()};
+        }
+        else
+        {
+            buffer = buffer.subspan(result);
+        }
     }
-    return data.subspan(result);
+    return {bytesToSend};
 }
 
 
 //=============================================================================
 template <maniscalco::network::network_transport_protocol P>
-std::vector<std::uint8_t> maniscalco::network::active_socket_impl<P>::receive
+auto maniscalco::network::active_socket_impl<P>::send
+(
+    std::span<char const> buffer
+) -> send_result
+requires (udp_protocol_concept<P>) 
+{
+    while (true)
+    {
+        auto result = ::send(fileDescriptor_.get(), buffer.data(), buffer.size(), MSG_NOSIGNAL);
+        if (result < 0)
+        {
+            if (result != EAGAIN)
+                return {result, 0};
+        }
+        else
+        {
+            return {buffer.size()};
+        }
+    }
+}
+
+
+//=============================================================================
+template <maniscalco::network::network_transport_protocol P>
+void maniscalco::network::active_socket_impl<P>::receive
 (
 )
 {
-    // TODO: get from allocator
-    std::vector<std::uint8_t> buffer(2048);
-
-    auto result = ::recv(fileDescriptor_.get(), buffer.data(), buffer.capacity(), 0);
-    if (result > 0)
+    packet buffer = packetAllocationHandler_(id_, 2048);
+    if (auto r = ::recv(fileDescriptor_.get(), buffer.data(), buffer.size(), 0); r >= 0)
     {
-        buffer.resize(result);
+        buffer.resize(r);
         receiveHandler_(id_, std::move(buffer));
         on_polled(); // there could be more ...
-        return buffer;
     }
-    if (result == EAGAIN)
-        on_polled();
-    // TODO: deal with actual errors
-    return {};
+    else
+    {
+        if ((errno != EAGAIN) && (errno != EWOULDBLOCK) && (receiveErrorHandler_))
+            receiveErrorHandler_(id_, receive_error{errno});
+    }
 }
 
 

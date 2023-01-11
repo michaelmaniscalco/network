@@ -1,6 +1,8 @@
 #include <library/network.h>
 #include <library/system.h>
 
+#include "./network_stream.h"
+
 #include <iostream>
 #include <map>
 
@@ -39,13 +41,23 @@ namespace
 
     auto receiveHandler = []
             (
-                auto socketId, 
-                auto buffer
+                auto socketId,
+                auto packet
             )
             {
                 std::lock_guard lg(mutex);
                 std::cout << "socket " << socketId << ": received message: \"" << 
-                        std::string((char const *)buffer.data(), buffer.size()) << "\"\n";
+                        std::string((char const *)packet.data(), packet.size()) << "\"\n";
+            };
+
+    auto receiveErrorHandler = []
+            (
+                auto socketId,
+                auto receiveError
+            )
+            {
+                std::lock_guard lg(mutex);
+                std::cout << "socket " << socketId << ": receive error code = " << strerror(receiveError.get_error_code()) << "\n";
             };
 
     auto acceptHandler = []
@@ -59,14 +71,16 @@ namespace
                         {},
                         {
                             .closeHandler_ = closeHandler,
-                            .receiveHandler_ = [&](auto socketId, auto buffer)
-                            {
-                                std::lock_guard lg(mutex);
-                                std::cout << "socket " << socketId << ": received message: \"" << 
-                                        std::string((char const *)buffer.data(), buffer.size()) << "\"\n";
-                                if (auto iter = acceptedTcpSockets.find(socketId); iter != acceptedTcpSockets.end())
-                                    iter->second.send("right back at you good buddy!");
-                            }
+                            .receiveHandler_ = [&]
+                                    (
+                                        auto socketId,
+                                        auto packet
+                                    )
+                                    {
+                                        receiveHandler(socketId, packet);
+                                        if (auto iter = acceptedTcpSockets.find(socketId); iter != acceptedTcpSockets.end())
+                                            iter->second.send("right back at you good buddy!");
+                                    }
                         }); 
                 auto acceptedTcpSocketId = acceptedTcpSocket.get_id();
                 acceptedTcpSockets[acceptedTcpSocketId] = std::move(acceptedTcpSocket);
@@ -84,17 +98,21 @@ void demonstrate_udp_sockets
 )
 {
     std::cout << "*** UDP demonstration ***\n";
-    auto udpSocket1 = networkInterface.open_socket<udp_socket>(any_loopback_ip_address, {}, {.closeHandler_ = closeHandler, .receiveHandler_ = receiveHandler});
-    auto udpSocket2 = networkInterface.open_socket<udp_socket>(any_loopback_ip_address, {}, {.closeHandler_ = closeHandler, .receiveHandler_ = receiveHandler});
+    // for demonstrative puproses. make first partner a 'stream' so that it can support async send
+    auto udpNetworkStream1 = networkInterface.open_stream<udp_socket>(any_loopback_ip_address, {}, 
+            {.closeHandler_ = closeHandler, .receiveHandler_ = receiveHandler, .receiveErrorHandler_ = receiveErrorHandler});
+    // but make the second partner a plain old socket (async receive but blocking send)
+    auto udpSocket2 = networkInterface.open_socket<udp_socket>(any_loopback_ip_address, {}, 
+            {.closeHandler_ = closeHandler, .receiveHandler_ = receiveHandler, .receiveErrorHandler_ = receiveErrorHandler});
 
-    udpSocket1.connect_to(udpSocket2.get_ip_address());
-    udpSocket2.connect_to(udpSocket1.get_ip_address());
+    udpNetworkStream1.connect_to(udpSocket2.get_ip_address());
+    udpSocket2.connect_to(udpNetworkStream1.get_ip_address());
 
-    udpSocket1.send("guess what");
+    udpNetworkStream1.send("guess what");
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
     udpSocket2.send("chicken butt!!!");
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    udpSocket1.send("guess why");
+    udpNetworkStream1.send("guess why");
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
     udpSocket2.send("chicken thigh!!!");
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -112,7 +130,8 @@ void demonstrate_udp_multicast_sockets
     port_id multicastPortId{3000};
 
     std::cout << "*** Multicast UDP demonstration ***\n";
-    auto sender = networkInterface.open_socket<udp_socket>(any_loopback_ip_address, {}, {.closeHandler_ = closeHandler, .receiveHandler_ = receiveHandler});
+    auto sender = networkInterface.open_socket<udp_socket>(any_loopback_ip_address, {}, 
+            {.closeHandler_ = closeHandler, .receiveHandler_ = receiveHandler, .receiveErrorHandler_ = receiveErrorHandler});
     sender.connect_to(ip_address{multicastNetworkId, multicastPortId});
 
     static auto constexpr number_of_receivers = 10;
@@ -120,7 +139,8 @@ void demonstrate_udp_multicast_sockets
     for (auto & receiver : receivers)
     {
         // open udp socket and then join the multicast.
-        receiver = networkInterface.open_socket<udp_socket>(ip_address{in_addr_any, multicastPortId}, {}, {.closeHandler_ = closeHandler, .receiveHandler_ = receiveHandler});
+        receiver = networkInterface.open_socket<udp_socket>(ip_address{in_addr_any, multicastPortId}, {}, 
+            {.closeHandler_ = closeHandler, .receiveHandler_ = receiveHandler, .receiveErrorHandler_ = receiveErrorHandler});
         receiver.join(multicastNetworkId);
         // this can also be done in one step with:
         // receiver = networkInterface.join_multicast(ip_address{in_addr_any, multicastPortId}, {}, {.closeHandler_ = closeHandler, .receiveHandler_ = receiveHandler}, multicastNetworkId);
@@ -156,7 +176,8 @@ void demonstrate_tcp_sockets
             }, 
             {
                 .closeHandler_ = closeHandler, 
-                .receiveHandler_ = receiveHandler
+                .receiveHandler_ = receiveHandler,
+                .receiveErrorHandler_ = receiveErrorHandler
             });
 
     tcpSocket.connect_to(tcp_listener_ip_address);

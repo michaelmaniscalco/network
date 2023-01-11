@@ -4,8 +4,7 @@
 
 
 //=============================================================================
-template <maniscalco::network::network_transport_protocol P>
-maniscalco::network::passive_socket<P>::socket
+maniscalco::network::passive_socket::socket
 (
     ip_address ipAddress,
     configuration const & config,
@@ -29,17 +28,7 @@ maniscalco::network::passive_socket<P>::socket
 
 
 //=============================================================================
-template <maniscalco::network::network_transport_protocol P>
-maniscalco::network::passive_socket<P>::~socket
-(
-)
-{
-}
-
-
-//=============================================================================
-template <maniscalco::network::network_transport_protocol P>
-bool maniscalco::network::passive_socket<P>::close
+bool maniscalco::network::passive_socket::close
 (
 )
 {
@@ -50,8 +39,7 @@ bool maniscalco::network::passive_socket<P>::close
 
 
 //=============================================================================
-template <maniscalco::network::network_transport_protocol P>
-bool maniscalco::network::passive_socket<P>::is_valid
+bool maniscalco::network::passive_socket::is_valid
 (
 ) const noexcept
 {
@@ -62,8 +50,7 @@ bool maniscalco::network::passive_socket<P>::is_valid
 
 
 //=============================================================================
-template <maniscalco::network::network_transport_protocol P>
-auto maniscalco::network::passive_socket<P>::get_ip_address
+auto maniscalco::network::passive_socket::get_ip_address
 (
 ) const noexcept -> ip_address
 {
@@ -74,19 +61,11 @@ auto maniscalco::network::passive_socket<P>::get_ip_address
 
 
 //=============================================================================
-template <maniscalco::network::network_transport_protocol P>
-auto maniscalco::network::passive_socket<P>::get_id
+auto maniscalco::network::passive_socket::get_id
 (
 ) const -> socket_id
 {
     if (impl_)
         return impl_->get_id();
     return {};
-}
-
-
-//=============================================================================
-namespace maniscalco::network
-{
-    template class socket<tcp_listener_socket_traits>;
 }

@@ -15,13 +15,13 @@
 namespace maniscalco::network
 {
 
-    template <network_transport_protocol P>
-    class socket_impl<socket_traits<P, socket_type::passive>> :
+    template <>
+    class socket_impl<tcp_listener_socket_traits> :
         public socket_base_impl
     {
     public:
 
-        using traits = socket_traits<P, socket_type::passive>;
+        using traits = tcp_listener_socket_traits;
 
         struct event_handlers : socket_base_impl::event_handlers
         {
@@ -56,13 +56,10 @@ namespace maniscalco::network
 
         typename event_handlers::accept_handler acceptHandler_;
 
-    }; // namespace socket_impl<passive_socket_traits_concept> 
+    }; // namespace socket_impl<tcp_listener_socket_traits> 
 
+    using passive_socket_impl = socket_impl<tcp_listener_socket_traits>;
 
-    template <network_transport_protocol P>
-    using passive_socket_impl = socket_impl<socket_traits<P, socket_type::passive>>;
-
-
-    using tcp_listener_socket_impl = passive_socket_impl<network_transport_protocol::tcp>;
+    using tcp_listener_socket_impl = passive_socket_impl;
 
 } // namespace maniscalco::network

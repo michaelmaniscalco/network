@@ -4,7 +4,11 @@
 #include "./traits/traits.h"
 #include "./return_code/connect_result.h"
 #include "./return_code/bind_result.h"
+#include "./return_code/receive_result.h"
+#include "./return_code/send_result.h"
+
 #include <library/network/ip/ip_address.h>
+#include <library/network/packet/packet.h>
 
 #include <include/file_descriptor.h>
 #include <include/io_mode.h>
@@ -32,10 +36,14 @@ namespace maniscalco::network
         struct event_handlers
         {
             using close_handler = std::function<void(socket_id)>;
-            using receive_handler = std::function<void(socket_id, std::vector<std::uint8_t>)>;
+            using receive_handler = std::function<void(socket_id, packet)>;
+            using receive_error_handler = std::function<void(socket_id, receive_error)>;
+            using packet_allocation_handler = std::function<packet(socket_id, std::size_t)>;
 
-            close_handler   closeHandler_;
-            receive_handler receiveHandler_;
+            close_handler               closeHandler_;
+            receive_handler             receiveHandler_;
+            receive_error_handler       receiveErrorHandler_;
+            packet_allocation_handler   packetAllocationHandler_;
         };
 
         struct configuration
@@ -68,11 +76,11 @@ namespace maniscalco::network
             event_handlers const &,
             system::work_contract_group &,
             poller &
-        );
+        ) requires (tcp_protocol_concept<P>);
 
-        virtual ~socket();
+        ~socket() = default;
 
-        std::span<char const> send
+        send_result send
         (
             std::span<char const>
         );
@@ -91,8 +99,6 @@ namespace maniscalco::network
         bool is_connected() const noexcept;
 
         ip_address get_connected_ip_address() const noexcept;
-
-        std::vector<std::uint8_t> receive();
 
         socket_id get_id() const;
         

@@ -2,6 +2,10 @@
 
 #include <library/network/socket/socket.h>
 #include <library/network/polling/poller.h>
+#include <library/network/packet/packet.h>
+
+#include <library/network/socket/return_code/receive_result.h>
+#include <library/network/socket/return_code/send_result.h>
 
 #include "./socket_base_impl.h"
 
@@ -26,8 +30,13 @@ namespace maniscalco::network
 
         struct event_handlers : socket_base_impl::event_handlers
         {
-            using receive_handler = std::function<void(socket_id, std::vector<std::uint8_t>)>;
-            receive_handler receiveHandler_;
+            using receive_handler = std::function<void(socket_id, packet)>;
+            using packet_allocation_handler = std::function<packet(socket_id, std::size_t)>;
+            using receive_error_handler = std::function<void(socket_id, receive_error)>;
+
+            receive_handler             receiveHandler_;
+            receive_error_handler       receiveErrorHandler_;
+            packet_allocation_handler   packetAllocationHandler_;
         };
 
         struct configuration
@@ -53,19 +62,24 @@ namespace maniscalco::network
             event_handlers const &,
             system::work_contract_group &,
             poller &
-        );
+        ) requires (tcp_protocol_concept<P>);
 
-        std::span<char const> send
+        send_result send
         (
             std::span<char const>
-        );
+        ) requires (tcp_protocol_concept<P>);
+
+        send_result send
+        (
+            std::span<char const>
+        ) requires (udp_protocol_concept<P>);
 
         connect_result connect_to
         (
             ip_address const &
         ) noexcept;
 
-        std::vector<std::uint8_t> receive();
+        void receive();
 
         void destroy();
 
@@ -84,11 +98,15 @@ namespace maniscalco::network
 
         bool disconnect();
 
-        ip_address                      connectedIpAddress_;
+        ip_address                                          connectedIpAddress_;
 
-        poller_registration             pollerRegistration_;
+        poller_registration                                 pollerRegistration_;
 
-        typename event_handlers::receive_handler receiveHandler_;
+        typename event_handlers::receive_handler            receiveHandler_;
+
+        typename event_handlers::receive_error_handler      receiveErrorHandler_;
+        
+        typename event_handlers::packet_allocation_handler  packetAllocationHandler_;
 
     }; // class socket_impl<socket_traits<P, socket_type::active>>
 

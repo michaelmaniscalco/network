@@ -21,7 +21,7 @@ namespace maniscalco::network
 
 
     //=========================================================================
-    static std::string_view const to_string
+    [[maybe_unused]] static std::string_view const to_string
     (
         connect_result connectResult
     )

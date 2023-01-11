@@ -21,12 +21,12 @@ namespace maniscalco::network
 
 
     //=========================================================================
-    template <network_transport_protocol P>
-    class socket<passive_socket_traits<P>>
+    template <>
+    class socket<tcp_listener_socket_traits>
     {
     public:
 
-        using traits = passive_socket_traits<P>; 
+        using traits = tcp_listener_socket_traits; 
 
         static auto constexpr default_backlog{128};
 
@@ -60,7 +60,7 @@ namespace maniscalco::network
             poller &
         );
 
-        virtual ~socket();
+        ~socket() = default;
 
         bool close();
 
@@ -76,13 +76,11 @@ namespace maniscalco::network
 
         std::unique_ptr<impl_type, std::function<void(impl_type *)>>   impl_;
 
-    }; // class socket<passive_socket_traits<P>>
+    }; // class socket<tcp_listener_socket_traits>
 
 
-    template <network_transport_protocol T>
-    using passive_socket = socket<passive_socket_traits<T>>;
+    using passive_socket = socket<tcp_listener_socket_traits>;
 
-
-    using tcp_listener_socket = passive_socket<network_transport_protocol::tcp>;
+    using tcp_listener_socket = passive_socket;
 
 } // namespace maniscalco::network

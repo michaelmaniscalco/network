@@ -23,7 +23,9 @@ maniscalco::network::active_socket<P>::socket
             },
             {
                 eventHandlers.closeHandler_,
-                eventHandlers.receiveHandler_
+                eventHandlers.receiveHandler_,
+                eventHandlers.receiveErrorHandler_,
+                eventHandlers.packetAllocationHandler_
             },
             workContractGroup, p), 
             [](auto * impl){impl->destroy();}));
@@ -39,7 +41,7 @@ maniscalco::network::active_socket<P>::socket
     event_handlers const & eventHandlers,
     system::work_contract_group & workContractGroup,
     poller & p
-)
+) requires (tcp_protocol_concept<P>)
 {
     impl_ = std::move(decltype(impl_)(new impl_type(
             std::move(fileDescriptor), 
@@ -50,19 +52,12 @@ maniscalco::network::active_socket<P>::socket
             },
             {
                 eventHandlers.closeHandler_,
-                eventHandlers.receiveHandler_
+                eventHandlers.receiveHandler_,
+                eventHandlers.receiveErrorHandler_,
+                eventHandlers.packetAllocationHandler_
             },
             workContractGroup, p), 
             [](auto * impl){impl->destroy();}));
-}
-
-
-//=============================================================================
-template <maniscalco::network::network_transport_protocol P>
-maniscalco::network::active_socket<P>::~socket
-(
-)
-{
 }
 
 
@@ -94,14 +89,14 @@ requires (P == network_transport_protocol::udp)
 
 //=============================================================================
 template <maniscalco::network::network_transport_protocol P>
-std::span<char const> maniscalco::network::active_socket<P>::send
+auto maniscalco::network::active_socket<P>::send
 (
-    std::span<char const> data
-)
+    std::span<char const> buffer
+) -> send_result
 {
     if (impl_)
-        return impl_->send(data);
-    return data;
+        return impl_->send(std::move(buffer));
+    return {ENOTCONN, 0};
 }
 
 
@@ -161,18 +156,6 @@ auto maniscalco::network::active_socket<P>::get_connected_ip_address
 {
     if (impl_)
         return impl_->get_connected_ip_address();
-    return {};
-}
-
-
-//=============================================================================
-template <maniscalco::network::network_transport_protocol P>
-std::vector<std::uint8_t> maniscalco::network::active_socket<P>::receive
-(
-)
-{
-    if (impl_)
-        return impl_->receive();
     return {};
 }
 

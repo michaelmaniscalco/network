@@ -25,4 +25,5 @@ target_include_directories(network
         ${_common_src_path}/src
         ${_work_contract_src_path}/src
         ${_fmt_src_path}/include
+        ${_type_safe_src_path}/include
 )

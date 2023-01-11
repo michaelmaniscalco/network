@@ -2,8 +2,7 @@
 
 
 //=============================================================================
-template <maniscalco::network::network_transport_protocol P>
-maniscalco::network::passive_socket_impl<P>::socket_impl
+maniscalco::network::passive_socket_impl::socket_impl
 (
     ip_address ipAddress,
     configuration const & config,
@@ -25,8 +24,7 @@ maniscalco::network::passive_socket_impl<P>::socket_impl
 
 
 //=============================================================================
-template <maniscalco::network::network_transport_protocol P>
-void maniscalco::network::passive_socket_impl<P>::accept
+void maniscalco::network::passive_socket_impl::accept
 (
 )
 {
@@ -39,8 +37,7 @@ void maniscalco::network::passive_socket_impl<P>::accept
 
 
 //=============================================================================
-template <maniscalco::network::network_transport_protocol P>
-void maniscalco::network::passive_socket_impl<P>::destroy
+void maniscalco::network::passive_socket_impl::destroy
 (
     // use the work contract to asynchronously delete 'this'.
     // doing it this way ensures that the work contract's primary
@@ -60,11 +57,4 @@ void maniscalco::network::passive_socket_impl<P>::destroy
         pollerRegistration_.release();
         delete this;
     }
-}
-
-
-//=============================================================================
-namespace maniscalco::network
-{
-    template class socket_impl<tcp_listener_socket_traits>;
 }

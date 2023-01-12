@@ -182,9 +182,14 @@ void demonstrate_tcp_sockets
 
     tcpSocket.connect_to(tcp_listener_ip_address);
     tcpSocket.send("greetings partner!");
+    tcpSocket.set_read_only(); // sends graceful shutdown
     // since the socket system is async (and for simplicity sake) simply sleep for a tiny bit to let the partner respond
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
     acceptedTcpSockets.clear(); // close any accepted sockets 
+
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
 }
 
 

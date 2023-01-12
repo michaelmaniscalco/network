@@ -199,6 +199,15 @@ bool maniscalco::network::socket_base_impl::set_synchronicity
 
 
 //=============================================================================
+bool maniscalco::network::socket_base_impl::shutdown
+(
+) noexcept
+{
+    return set_io_mode(system::io_mode::none);
+}
+
+
+//=============================================================================
 bool maniscalco::network::socket_base_impl::set_io_mode
 (
     system::io_mode ioMode

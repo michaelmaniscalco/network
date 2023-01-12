@@ -107,6 +107,8 @@ namespace maniscalco::network
             network_id
         ) requires (P == network_transport_protocol::udp);
 
+        bool shutdown() noexcept;
+
         system::file_descriptor const & get_file_descriptor() const;
 
         bool set_read_only() noexcept;

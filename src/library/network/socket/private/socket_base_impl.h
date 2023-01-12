@@ -69,6 +69,8 @@ namespace maniscalco::network
 
         socket_id get_id() const noexcept;
 
+        bool shutdown() noexcept;
+
         bool set_io_mode
         (
             system::io_mode

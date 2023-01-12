@@ -174,6 +174,18 @@ auto maniscalco::network::active_socket<P>::get_id
 
 //=============================================================================
 template <maniscalco::network::network_transport_protocol P>
+bool maniscalco::network::active_socket<P>::shutdown
+(
+) noexcept
+{
+    if (impl_)
+        return impl_->shutdown();
+    return false;
+}
+
+
+//=============================================================================
+template <maniscalco::network::network_transport_protocol P>
 bool maniscalco::network::active_socket<P>::set_read_only
 (
 ) noexcept

@@ -226,9 +226,20 @@ void maniscalco::network::active_socket_impl<P>::receive
     packet buffer = packetAllocationHandler_(id_, 2048);
     if (auto r = ::recv(fileDescriptor_.get(), buffer.data(), buffer.size(), 0); r >= 0)
     {
+        if (r == 0)        
+        {
+            if constexpr (tcp_protocol_concept<P>)
+            {
+                // graceful shutdown
+                std::cout << "socket " << id_ << ": received graceful shutdown\n";
+                close();
+                return;
+            }
+        }
         buffer.resize(r);
         receiveHandler_(id_, std::move(buffer));
-        on_polled(); // there could be more ...
+        if (r > 0)
+            on_polled(); // there could be more ...
     }
     else
     {

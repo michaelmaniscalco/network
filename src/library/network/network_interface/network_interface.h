@@ -51,9 +51,8 @@ namespace maniscalco::network
 
     private:
 
-        std::shared_ptr<poller> poller_;
-
-        std::shared_ptr<system::work_contract_group>     workContractGroup_;
+        std::shared_ptr<poller>                         poller_;
+        std::shared_ptr<system::work_contract_group>    workContractGroup_;
 
     }; // class network_interface
 

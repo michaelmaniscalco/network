@@ -53,9 +53,9 @@ namespace maniscalco::network
 
     private:
 
-        system::file_descriptor     fileDescriptor_;
+        system::file_descriptor fileDescriptor_;
 
-        trigger_type        trigger_;
+        trigger_type            trigger_;
 
     }; // class poller
 

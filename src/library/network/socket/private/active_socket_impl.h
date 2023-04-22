@@ -85,7 +85,7 @@ namespace maniscalco::network
 
         bool is_connected() const noexcept;
 
-        ip_address get_connected_ip_address() const noexcept;
+        ip_address get_peer_ip_address() const noexcept;
 
         connect_result join
         (
@@ -98,7 +98,7 @@ namespace maniscalco::network
 
         bool disconnect();
 
-        ip_address                                          connectedIpAddress_;
+        ip_address                                          peerIpAddress_;
 
         poller_registration                                 pollerRegistration_;
 

@@ -1,0 +1,89 @@
+#include "./packet_stream.h"
+
+
+//=============================================================================
+maniscalco::network::packet_stream::packet_stream
+(
+    configuration const & config
+):
+    spscQueue_(config.capacity_),
+    nonEmptyHandler_(config.nonEmptyHandler_),
+    emptyHandler_(config.emptyHandler_)
+{
+}
+
+
+//=============================================================================
+std::size_t maniscalco::network::packet_stream::size
+(
+) const
+{
+    return spscQueue_.size();
+}
+
+
+//=============================================================================
+bool maniscalco::network::packet_stream::empty
+(
+) const
+{
+    return spscQueue_.empty();
+}
+
+
+//=============================================================================
+std::size_t maniscalco::network::packet_stream::capacity
+(
+) const
+{
+    return spscQueue_.capacity();
+}
+
+
+//=============================================================================
+std::pair<bool, std::size_t> maniscalco::network::packet_stream::push
+(
+    // returns pair indicating success or failure, queue size after push attempt
+    packet & p
+)
+{
+    auto && [pushSuccess, queueSizeAfterToPush] = spscQueue_.push(p);
+    if (pushSuccess)
+    {
+        nonEmptyHandler_(*this);
+        return {true, queueSizeAfterToPush};
+    }
+    return {false, queueSizeAfterToPush};
+}
+
+
+//=============================================================================
+auto maniscalco::network::packet_stream::pop
+(
+    // return pair containing the packet (if any) and the new size of the queue after pop attempt
+) -> std::pair<packet, std::size_t>
+{
+    packet destination;
+    auto && [popSuccess, queueSizeAfterPop] = spscQueue_.try_pop(destination);
+    if ((popSuccess) && (queueSizeAfterPop == 0))
+        emptyHandler_(*this);
+    return {std::move(destination), queueSizeAfterPop};
+}
+
+
+//=============================================================================
+auto maniscalco::network::packet_stream::front
+(
+) const -> packet const &
+{
+    return spscQueue_.front();
+}
+
+
+//=============================================================================
+auto maniscalco::network::packet_stream::front
+(
+) -> packet &
+{
+    return spscQueue_.front();
+}

@@ -1,5 +1,4 @@
 #include "./passive_socket.h"
-
 #include "./private/passive_socket_impl.h"
 
 
@@ -20,6 +19,7 @@ maniscalco::network::passive_socket::socket
             }, 
             {
                 eventHandlers.closeHandler_,
+                eventHandlers.pollErrorHandler_,
                 eventHandlers.acceptHandler_
             },
             workContractGroup, p), 
@@ -32,9 +32,7 @@ bool maniscalco::network::passive_socket::close
 (
 )
 {
-    if (impl_)
-        return impl_->close();
-    return false;
+    return (impl_) ? impl_->close() : false;
 }
 
 
@@ -43,9 +41,7 @@ bool maniscalco::network::passive_socket::is_valid
 (
 ) const noexcept
 {
-    if (impl_)
-        return impl_->is_valid();
-    return false;
+    return (impl_) ? impl_->is_valid() : false;
 }
 
 
@@ -54,9 +50,7 @@ auto maniscalco::network::passive_socket::get_ip_address
 (
 ) const noexcept -> ip_address
 {
-    if (impl_)
-        return impl_->get_ip_address();
-    return {};
+    return (impl_) ? impl_->get_ip_address() : ip_address{};
 }
 
 
@@ -65,7 +59,5 @@ auto maniscalco::network::passive_socket::get_id
 (
 ) const -> socket_id
 {
-    if (impl_)
-        return impl_->get_id();
-    return {};
+    return (impl_) ? impl_->get_id() : socket_id{};
 }

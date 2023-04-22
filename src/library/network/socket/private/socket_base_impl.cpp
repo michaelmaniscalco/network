@@ -21,6 +21,7 @@ maniscalco::network::socket_base_impl::socket_base_impl
 ) noexcept :
     fileDescriptor_(std::move(fileDescriptor)),
     closeHandler_(eventHandlers.closeHandler_),
+    pollErrorHandler_(eventHandlers.pollErrorHandler_),
     workContract_(std::move(workContract))
 {
     if (!set_socket_option(SOL_SOCKET, SO_REUSEADDR, 1))
@@ -86,6 +87,18 @@ void maniscalco::network::socket_base_impl::on_polled
 {
     workContract_.invoke();
 }
+
+
+//=============================================================================
+void maniscalco::network::socket_base_impl::on_poll_error
+(
+)
+{
+    if (pollErrorHandler_)
+        pollErrorHandler_(id_);
+}
+
+
 
 
 //=============================================================================

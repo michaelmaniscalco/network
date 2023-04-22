@@ -36,11 +36,13 @@ namespace maniscalco::network
         struct event_handlers
         {
             using close_handler = std::function<void(socket_id)>;
+            using poll_error_handler = std::function<void(socket_id)>;
             using receive_handler = std::function<void(socket_id, packet)>;
             using receive_error_handler = std::function<void(socket_id, receive_error)>;
             using packet_allocation_handler = std::function<packet(socket_id, std::size_t)>;
 
             close_handler               closeHandler_;
+            poll_error_handler          pollErrorHandler_;
             receive_handler             receiveHandler_;
             receive_error_handler       receiveErrorHandler_;
             packet_allocation_handler   packetAllocationHandler_;
@@ -98,7 +100,7 @@ namespace maniscalco::network
 
         bool is_connected() const noexcept;
 
-        ip_address get_connected_ip_address() const noexcept;
+        ip_address get_peer_ip_address() const noexcept;
 
         socket_id get_id() const;
         

@@ -31,8 +31,10 @@ namespace maniscalco::network
         struct event_handlers
         {
             using close_handler = std::function<void(socket_id)>;
+            using poll_error_handler = std::function<void(socket_id)>;
 
-            close_handler   closeHandler_;
+            close_handler       closeHandler_;
+            poll_error_handler  pollErrorHandler_;
         };
 
         struct configuration
@@ -93,6 +95,8 @@ namespace maniscalco::network
 
         void on_polled();
 
+        void on_poll_error();
+
         template <typename T>
         bool set_socket_option
         (
@@ -108,15 +112,17 @@ namespace maniscalco::network
 
         ip_address get_socket_name() const noexcept;
 
-        system::file_descriptor         fileDescriptor_;
+        system::file_descriptor             fileDescriptor_;
 
-        ip_address                      ipAddress_;
+        ip_address                          ipAddress_;
 
-        socket_id                       id_;
+        socket_id                           id_;
 
-        event_handlers::close_handler   closeHandler_;
+        event_handlers::close_handler       closeHandler_;
 
-        system::work_contract           workContract_;
+        event_handlers::poll_error_handler  pollErrorHandler_;
+
+        system::work_contract               workContract_;
 
     }; // class socket_base_impl
 

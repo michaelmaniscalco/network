@@ -1,5 +1,4 @@
 #include "./active_socket.h"
-
 #include "./private/active_socket_impl.h"
 
 
@@ -23,6 +22,7 @@ maniscalco::network::active_socket<P>::socket
             },
             {
                 eventHandlers.closeHandler_,
+                eventHandlers.pollErrorHandler_,
                 eventHandlers.receiveHandler_,
                 eventHandlers.receiveErrorHandler_,
                 eventHandlers.packetAllocationHandler_
@@ -52,6 +52,7 @@ maniscalco::network::active_socket<P>::socket
             },
             {
                 eventHandlers.closeHandler_,
+                eventHandlers.pollErrorHandler_,
                 eventHandlers.receiveHandler_,
                 eventHandlers.receiveErrorHandler_,
                 eventHandlers.packetAllocationHandler_
@@ -68,9 +69,7 @@ auto maniscalco::network::active_socket<P>::connect_to
     ip_address const & destination
 ) noexcept -> connect_result
 {
-    if (impl_)
-        return impl_->connect_to(destination);
-    return connect_result::connect_error;
+    return (impl_) ? impl_->connect_to(destination) : connect_result::connect_error;
 }
 
 
@@ -82,10 +81,9 @@ auto maniscalco::network::active_socket<P>::join
 ) -> connect_result 
 requires (P == network_transport_protocol::udp)
 {
-    if (impl_)
-        return impl_->join(networkId);
-    return connect_result::connect_error;
+    return (impl_) ? impl_->join(networkId) : connect_result::connect_error;
 }
+
 
 //=============================================================================
 template <maniscalco::network::network_transport_protocol P>
@@ -94,9 +92,7 @@ auto maniscalco::network::active_socket<P>::send
     std::span<char const> buffer
 ) -> send_result
 {
-    if (impl_)
-        return impl_->send(std::move(buffer));
-    return {ENOTCONN, 0};
+    return (impl_) ? impl_->send(std::move(buffer)) : send_result{ENOTCONN, 0};
 }
 
 
@@ -106,9 +102,7 @@ bool maniscalco::network::active_socket<P>::close
 (
 )
 {
-    if (impl_)
-        return impl_->close();
-    return false;
+    return (impl_) ? impl_->close() : false;
 }
 
 
@@ -118,9 +112,7 @@ bool maniscalco::network::active_socket<P>::is_valid
 (
 ) const noexcept
 {
-    if (impl_)
-        return impl_->is_valid();
-    return false;
+    return (impl_) ? impl_->is_valid() : false;
 }
 
 
@@ -130,9 +122,7 @@ auto maniscalco::network::active_socket<P>::get_ip_address
 (
 ) const noexcept -> ip_address
 {
-    if (impl_)
-        return impl_->get_ip_address();
-    return {};
+    return (impl_) ? impl_->get_ip_address() : ip_address{};
 }
 
 
@@ -142,21 +132,17 @@ bool maniscalco::network::active_socket<P>::is_connected
 (
 ) const noexcept
 {
-    if (impl_)
-        return impl_->is_connected();
-    return false;
+    return (impl_) ? impl_->is_connected() : false;
 }
 
 
 //=============================================================================
 template <maniscalco::network::network_transport_protocol P>
-auto maniscalco::network::active_socket<P>::get_connected_ip_address
+auto maniscalco::network::active_socket<P>::get_peer_ip_address
 (
 ) const noexcept -> ip_address
 {
-    if (impl_)
-        return impl_->get_connected_ip_address();
-    return {};
+    return (impl_) ? impl_->get_peer_ip_address() : ip_address{};
 }
 
 
@@ -166,9 +152,7 @@ auto maniscalco::network::active_socket<P>::get_id
 (
 ) const -> socket_id
 {
-    if (impl_)
-        return impl_->get_id();
-    return {};
+    return (impl_) ? impl_->get_id() : socket_id{};
 }
 
 
@@ -178,9 +162,7 @@ bool maniscalco::network::active_socket<P>::shutdown
 (
 ) noexcept
 {
-    if (impl_)
-        return impl_->shutdown();
-    return false;
+    return (impl_) ? impl_->shutdown() : false;
 }
 
 
@@ -221,9 +203,7 @@ bool maniscalco::network::active_socket<P>::set_io_mode
     system::io_mode ioMode
 ) noexcept
 {
-    if (impl_)
-        return impl_->set_io_mode(ioMode);
-    return false;
+    return (impl_) ? impl_->set_io_mode(ioMode) : false;
 }
 
 

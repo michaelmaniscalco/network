@@ -99,11 +99,8 @@ namespace maniscalco::network
         }
 
         socket_type                     socket_;
-
         system::work_contract           workContract_;
-
         std::deque<buffer_type>         buffers_;
-
         std::mutex mutable              mutex_;
     };
 

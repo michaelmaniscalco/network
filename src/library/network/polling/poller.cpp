@@ -13,7 +13,14 @@
 #include <sys/epoll.h>
 
 #include <iostream>
+#include <span>
+#include <array>
 
+
+namespace
+{
+    static maniscalco::system::file_descriptor const invalid_file_descriptor;
+}
 
 //=============================================================================
 maniscalco::network::poller::poller
@@ -50,24 +57,18 @@ void maniscalco::network::poller::poll
 )
 {
     std::array<::epoll_event, 1024> epollEvents;
-    auto epollWaitResult = ::epoll_wait(fileDescriptor_.get(), epollEvents.data(), epollEvents.size(), 0);
-    if (epollWaitResult > 0)
+    for (auto const & event : std::span(epollEvents.data(), ::epoll_wait(fileDescriptor_.get(), epollEvents.data(), epollEvents.size(), 0)))
     {
-        for (auto i = 0; i < epollWaitResult; ++i)
+        auto impl = reinterpret_cast<socket_base_impl *>(event.data.ptr);
+        if (event.events & EPOLLERR)
         {
-            auto const & event = epollEvents[i];
-            auto impl = reinterpret_cast<socket_base_impl *>(event.data.ptr);
-/*
-            if (event.events & EPOLLERR)
-            {
-                if (socketInfo.socketErrorHandler_)
-                    socketInfo.socketErrorHandler_();
-            }
-*/
-            if (event.events & EPOLLIN)
-                impl->on_polled();
-        }   
-    }
+            impl->on_poll_error();
+            continue;
+        }
+
+        if (event.events & EPOLLIN)
+            impl->on_polled();
+    }   
 }
 
 
@@ -75,21 +76,19 @@ void maniscalco::network::poller::poll
 template <maniscalco::network::socket_impl_concept S>
 auto maniscalco::network::poller::register_socket
 (
-    S & s
+    // add socket to epoller
+    S & socket
 ) -> poller_registration
 {
-    socket_base_impl * socketImpl = &s;
-    // add socket to epoller
-    ::epoll_event epollEvent;
-    epollEvent.data.ptr = socketImpl;
-    epollEvent.events = (EPOLLIN | ((trigger_ == trigger_type::edge_triggered) ? EPOLLET : 0));
-    auto epollCtlResult = ::epoll_ctl(fileDescriptor_.get(), EPOLL_CTL_ADD, socketImpl->get_file_descriptor().get(), &epollEvent);
-    if (epollCtlResult != 0)
-    {
-        // TODO: log failure
-        return {weak_from_this(), {}};
-    }
-    return {weak_from_this(), socketImpl->get_file_descriptor()};
+    ::epoll_event epollEvent =
+            {
+                .events = (EPOLLIN | ((trigger_ == trigger_type::edge_triggered) ? EPOLLET : 0)),
+                .data = {.ptr = reinterpret_cast<socket_base_impl *>(&socket)}
+            };
+
+    return {weak_from_this(), 
+            (::epoll_ctl(fileDescriptor_.get(), EPOLL_CTL_ADD, socket.get_file_descriptor().get(), &epollEvent) == 0) ? 
+            socket.get_file_descriptor() : invalid_file_descriptor};
 }
 
 
@@ -99,14 +98,7 @@ bool maniscalco::network::poller::unregister_socket
     system::file_descriptor const & fileDescriptor
 )
 {
-    ::epoll_event epollEvent;
-    auto epollCtlResult = ::epoll_ctl(fileDescriptor_.get(), EPOLL_CTL_DEL, fileDescriptor.get(), &epollEvent);
-    if (epollCtlResult != 0)
-    {
-        // TODO: log failure
-        return false;
-    }
-    return true;
+    return (::epoll_ctl(fileDescriptor_.get(), EPOLL_CTL_DEL, fileDescriptor.get(), nullptr) == 0);
 }
 
 

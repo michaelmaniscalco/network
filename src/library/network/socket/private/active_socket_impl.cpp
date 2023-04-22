@@ -15,7 +15,7 @@ maniscalco::network::active_socket_impl<P>::socket_impl
     event_handlers const & eventHandlers,
     system::work_contract_group & workContractGroup,
     poller & p
-):    
+):
     socket_base_impl(ipAddress, {.ioMode_ = config.ioMode_}, eventHandlers, 
             (P == network_transport_protocol::udp) ? ::socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP) : ::socket(PF_INET, SOCK_STREAM, IPPROTO_TCP),
             workContractGroup.create_contract(
@@ -60,7 +60,7 @@ maniscalco::network::active_socket_impl<P>::socket_impl
     packetAllocationHandler_(eventHandlers.packetAllocationHandler_ ? eventHandlers.packetAllocationHandler_ :
             [](auto, auto desiredSize){return packet(desiredSize);})    
 {
-    connectedIpAddress_ = get_peer_name();
+    peerIpAddress_ = get_peer_name();
     if (config.receiveBufferSize_ > 0)
         set_socket_option(SOL_SOCKET, SO_RCVBUF, config.receiveBufferSize_);
     if (config.sendBufferSize_ > 0)
@@ -89,7 +89,7 @@ auto maniscalco::network::active_socket_impl<P>::connect_to
     auto result = ::connect(fileDescriptor_.get(), (sockaddr const *)&socketAddress, sizeof(socketAddress));
     if ((result != 0) && (errno != EINPROGRESS))
         return connect_result::connect_error;
-    connectedIpAddress_ = destination;
+    peerIpAddress_ = destination;
 
     set_socket_option(IPPROTO_IP, IP_MULTICAST_TTL, 8);
     return connect_result::success;
@@ -130,7 +130,7 @@ auto maniscalco::network::udp_socket_impl::join
         // TODO: log failure
         return connect_result::connect_error;
     }
-    connectedIpAddress_ = {networkId, port_id{0}};
+    peerIpAddress_ = {networkId, port_id{0}};
     set_io_mode(system::io_mode::read);
     return connect_result::success;
 }
@@ -147,19 +147,19 @@ bool maniscalco::network::active_socket_impl<P>::disconnect
 
     if constexpr (P == network_transport_protocol::udp)
     {
-        if (connectedIpAddress_.is_multicast())
+        if (peerIpAddress_.is_multicast())
         {
             // drop multicast membership
             ::ip_mreq mreq;
             ::memset(&mreq, 0x00, sizeof(mreq));
-            mreq.imr_multiaddr = connectedIpAddress_.get_network_id();
+            mreq.imr_multiaddr = peerIpAddress_.get_network_id();
             mreq.imr_interface = in_addr_any;
             if (!set_socket_option(IPPROTO_IP, IP_DROP_MEMBERSHIP, mreq))
             {
                 // TODO: log failure
                 return false;
             }
-            connectedIpAddress_ = {};
+            peerIpAddress_ = {};
             return true;
         }
     }
@@ -224,11 +224,11 @@ void maniscalco::network::active_socket_impl<P>::receive
 )
 {
     packet buffer = packetAllocationHandler_(id_, 2048);
-    if (auto r = ::recv(fileDescriptor_.get(), buffer.data(), buffer.size(), 0); r >= 0)
+    if (auto bytesReceived = ::recv(fileDescriptor_.get(), buffer.data(), buffer.size(), 0); bytesReceived >= 0)
     {
-        if (r == 0)        
-        {
-            if constexpr (tcp_protocol_concept<P>)
+        if constexpr (tcp_protocol_concept<P>)
+        {        
+            if (bytesReceived == 0)        
             {
                 // graceful shutdown
                 std::cout << "socket " << id_ << ": received graceful shutdown\n";
@@ -236,10 +236,9 @@ void maniscalco::network::active_socket_impl<P>::receive
                 return;
             }
         }
-        buffer.resize(r);
+        buffer.resize(bytesReceived);
         receiveHandler_(id_, std::move(buffer));
-        if (r > 0)
-            on_polled(); // there could be more ...
+        on_polled(); // there could be more ...
     }
     else
     {
@@ -281,17 +280,17 @@ bool maniscalco::network::active_socket_impl<P>::is_connected
 (
 ) const noexcept
 {
-    return (connectedIpAddress_.is_valid());
+    return (peerIpAddress_.is_valid());
 }
 
 
 //=============================================================================
 template <maniscalco::network::network_transport_protocol P>
-auto maniscalco::network::active_socket_impl<P>::get_connected_ip_address
+auto maniscalco::network::active_socket_impl<P>::get_peer_ip_address
 (
 ) const noexcept -> ip_address
 {
-    return connectedIpAddress_;
+    return peerIpAddress_;
 }
 
 

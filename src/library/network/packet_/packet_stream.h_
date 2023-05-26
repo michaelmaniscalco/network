@@ -1,0 +1,60 @@
+#pragma once
+
+#include "./packet.h"
+
+#include <include/spsc_queue.h>
+
+#include <functional>
+#include <cstdint>
+
+
+namespace maniscalco::network
+{
+
+    class packet_stream
+    {
+    public:
+
+        using non_empty_handler = std::function<void(packet_stream const &)>;
+        using empty_handler = std::function<void(packet_stream const &)>;
+
+        struct configuration
+        {
+            std::size_t         capacity_;
+            empty_handler       emptyHandler_{[](auto const &){}};
+            non_empty_handler   nonEmptyHandler_{[](auto const &){}};
+        };
+
+        packet_stream
+        (
+            configuration const &
+        );
+
+        std::size_t size() const;
+
+        bool empty() const;
+
+        std::size_t capacity() const;
+
+        std::pair<bool, std::size_t> push
+        (
+            packet &
+        );
+
+        std::pair<packet, std::size_t> pop();
+
+       packet & front();
+
+       packet const & front() const;
+
+    private:
+
+        spsc_queue<packet>  spscQueue_;
+
+        non_empty_handler   nonEmptyHandler_;
+
+        empty_handler       emptyHandler_;
+
+    }; // class packet_stream
+
+} // namespace maniscalco::network

@@ -14,7 +14,7 @@ namespace maniscalco::network
 {
 
     class poller :
-        std::enable_shared_from_this<poller>
+        public std::enable_shared_from_this<poller>
     {
     public:
 

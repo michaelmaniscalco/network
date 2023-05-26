@@ -32,7 +32,7 @@ namespace maniscalco::network
 
         struct configuration
         {
-            system::synchronicity_mode synchronicityMode_{system::synchronicity_mode::non_blocking};
+            system::synchronization_mode synchronicityMode_{system::synchronization_mode::non_blocking};
             std::uint32_t backlog_;
             system::io_mode ioMode_{system::io_mode::read_write};
         };

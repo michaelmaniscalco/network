@@ -19,10 +19,8 @@ maniscalco::network::active_socket_impl<P>::socket_impl
     socket_base_impl(ipAddress, {.ioMode_ = config.ioMode_}, eventHandlers, 
             (P == network_transport_protocol::udp) ? ::socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP) : ::socket(PF_INET, SOCK_STREAM, IPPROTO_TCP),
             workContractGroup.create_contract(
-            {
-                .contractHandler_ = [this](){this->receive();},
-                .endContractHandler_ = [this](){this->destroy();}
-            })),
+                    [this](){this->receive();},
+                    [this](){this->destroy();})),
     pollerRegistration_(p.register_socket(*this)),
     receiveHandler_(eventHandlers.receiveHandler_),
     receiveErrorHandler_(eventHandlers.receiveErrorHandler_),
@@ -50,10 +48,8 @@ maniscalco::network::active_socket_impl<P>::socket_impl
 ) requires (tcp_protocol_concept<P>) :
     socket_base_impl({.ioMode_ = config.ioMode_}, eventHandlers, std::move(fileDescriptor),
             workContractGroup.create_contract(
-            {
-                .contractHandler_ = [this](){this->receive();},
-                .endContractHandler_ = [this](){this->destroy();}
-            })),
+                    [this](){this->receive();},
+                    [this](){this->destroy();})),
     pollerRegistration_(p.register_socket(*this)),
     receiveHandler_(eventHandlers.receiveHandler_),
     receiveErrorHandler_(eventHandlers.receiveErrorHandler_),

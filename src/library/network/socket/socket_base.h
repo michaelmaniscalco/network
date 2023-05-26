@@ -22,46 +22,33 @@ namespace maniscalco::network
 {
 
     //=========================================================================
-    class socket_base_impl :
+    class socket_base :
         public non_copyable,
         public non_movable
     {
     public:
-
-        struct event_handlers
-        {
-            using close_handler = std::function<void(socket_id)>;
-            using poll_error_handler = std::function<void(socket_id)>;
-
-            close_handler       closeHandler_;
-            poll_error_handler  pollErrorHandler_;
-        };
 
         struct configuration
         {
             system::io_mode ioMode_{system::io_mode::read_write};
         };
 
-        socket_base_impl
+        socket_base
         (
             configuration const &,
-            event_handlers const &,
             system::file_descriptor,
             system::work_contract
         ) noexcept;
 
-        socket_base_impl
+        socket_base
         (
             ip_address,
             configuration const &,
-            event_handlers const &,
             system::file_descriptor,
             system::work_contract
         ) noexcept;
 
-        virtual ~socket_base_impl();
-
-        bool close();
+        virtual ~socket_base() = default;
 
         bool is_valid() const noexcept;
 
@@ -95,7 +82,7 @@ namespace maniscalco::network
 
         void on_polled();
 
-        void on_poll_error();
+        virtual void on_poll_error() = 0;
 
         template <typename T>
         bool set_socket_option
@@ -113,25 +100,17 @@ namespace maniscalco::network
         ip_address get_socket_name() const noexcept;
 
         system::file_descriptor             fileDescriptor_;
-
         ip_address                          ipAddress_;
-
         socket_id                           id_;
-
-        event_handlers::close_handler       closeHandler_;
-
-        event_handlers::poll_error_handler  pollErrorHandler_;
-
         system::work_contract               workContract_;
-
-    }; // class socket_base_impl
+    }; // class socket_base
 
 } // namespace maniscalco::network
 
 
 //=============================================================================
 template <typename T>
-bool maniscalco::network::socket_base_impl::set_socket_option
+bool maniscalco::network::socket_base::set_socket_option
 (
     std::int32_t level,
     std::int32_t optionName,

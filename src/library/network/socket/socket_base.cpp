@@ -1,4 +1,4 @@
-#include "./socket_base_impl.h"
+#include "./socket_base.h"
 
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -11,17 +11,14 @@
 
 
 //=============================================================================
-maniscalco::network::socket_base_impl::socket_base_impl
+maniscalco::network::socket_base::socket_base
 (
     ip_address ipAddress,
     configuration const & config,
-    event_handlers const & eventHandlers,
     system::file_descriptor fileDescriptor,
     system::work_contract workContract
 ) noexcept :
     fileDescriptor_(std::move(fileDescriptor)),
-    closeHandler_(eventHandlers.closeHandler_),
-    pollErrorHandler_(eventHandlers.pollErrorHandler_),
     workContract_(std::move(workContract))
 {
     if (!set_socket_option(SOL_SOCKET, SO_REUSEADDR, 1))
@@ -52,15 +49,13 @@ maniscalco::network::socket_base_impl::socket_base_impl
 
 
 //=============================================================================
-maniscalco::network::socket_base_impl::socket_base_impl
+maniscalco::network::socket_base::socket_base
 (
     configuration const & config,
-    event_handlers const & eventHandlers,
     system::file_descriptor fileDescriptor,
     system::work_contract workContract
 ) noexcept :
     fileDescriptor_(std::move(fileDescriptor)),
-    closeHandler_(eventHandlers.closeHandler_),
     workContract_(std::move(workContract))
 {
     if (!set_socket_option(SOL_SOCKET, SO_REUSEADDR, 1))
@@ -72,16 +67,7 @@ maniscalco::network::socket_base_impl::socket_base_impl
 
 
 //=============================================================================
-maniscalco::network::socket_base_impl::~socket_base_impl
-(
-)
-{
-    close();
-}
-
-
-//=============================================================================
-void maniscalco::network::socket_base_impl::on_polled
+void maniscalco::network::socket_base::on_polled
 (
 )
 {
@@ -90,19 +76,7 @@ void maniscalco::network::socket_base_impl::on_polled
 
 
 //=============================================================================
-void maniscalco::network::socket_base_impl::on_poll_error
-(
-)
-{
-    if (pollErrorHandler_)
-        pollErrorHandler_(id_);
-}
-
-
-
-
-//=============================================================================
-auto maniscalco::network::socket_base_impl::get_socket_name
+auto maniscalco::network::socket_base::get_socket_name
 (
 ) const noexcept -> ip_address
 {
@@ -115,7 +89,7 @@ auto maniscalco::network::socket_base_impl::get_socket_name
 
 
 //=============================================================================
-auto maniscalco::network::socket_base_impl::bind
+auto maniscalco::network::socket_base::bind
 (
     ip_address const & ipAddress
 ) noexcept -> bind_result
@@ -134,23 +108,7 @@ auto maniscalco::network::socket_base_impl::bind
 
 
 //=============================================================================
-bool maniscalco::network::socket_base_impl::close
-(
-)
-{
-    if (fileDescriptor_.close())
-    {
-        if (closeHandler_)
-            closeHandler_(id_);
-        ipAddress_ = {};
-        return true;
-    }
-    return false;
-}
-
-
-//=============================================================================
-bool maniscalco::network::socket_base_impl::is_valid
+bool maniscalco::network::socket_base::is_valid
 (
 ) const noexcept
 {
@@ -159,7 +117,7 @@ bool maniscalco::network::socket_base_impl::is_valid
 
 
 //=============================================================================
-auto maniscalco::network::socket_base_impl::get_file_descriptor
+auto maniscalco::network::socket_base::get_file_descriptor
 (
 ) const noexcept -> system::file_descriptor const & 
 {
@@ -168,7 +126,7 @@ auto maniscalco::network::socket_base_impl::get_file_descriptor
 
 
 //=============================================================================
-auto maniscalco::network::socket_base_impl::get_ip_address
+auto maniscalco::network::socket_base::get_ip_address
 (
 ) const noexcept -> ip_address
 {
@@ -177,7 +135,7 @@ auto maniscalco::network::socket_base_impl::get_ip_address
 
 
 //=============================================================================
-auto maniscalco::network::socket_base_impl::get_id
+auto maniscalco::network::socket_base::get_id
 (
 ) const noexcept -> socket_id
 {
@@ -186,11 +144,12 @@ auto maniscalco::network::socket_base_impl::get_id
 
 
 //=============================================================================
-bool maniscalco::network::socket_base_impl::set_synchronicity
+bool maniscalco::network::socket_base::set_synchronicity
 (
     system::synchronization_mode mode
 ) noexcept
 {
+    return false;
     auto flags = ::fcntl(fileDescriptor_.get(), F_GETFL, 0);
     if (flags == -1)
         return false;
@@ -212,7 +171,7 @@ bool maniscalco::network::socket_base_impl::set_synchronicity
 
 
 //=============================================================================
-bool maniscalco::network::socket_base_impl::shutdown
+bool maniscalco::network::socket_base::shutdown
 (
 ) noexcept
 {
@@ -221,7 +180,7 @@ bool maniscalco::network::socket_base_impl::shutdown
 
 
 //=============================================================================
-bool maniscalco::network::socket_base_impl::set_io_mode
+bool maniscalco::network::socket_base::set_io_mode
 (
     system::io_mode ioMode
 ) noexcept
@@ -253,7 +212,7 @@ bool maniscalco::network::socket_base_impl::set_io_mode
 
 
 //=============================================================================
-bool maniscalco::network::socket_base_impl::shutdown
+bool maniscalco::network::socket_base::shutdown
 (
     system::io_mode ioMode
 ) noexcept

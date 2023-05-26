@@ -26,7 +26,7 @@ namespace
     static ip_address const tcp_listener_ip_address{"127.0.0.1"s, port_id(3000)};
 
     // set up work contract group
-    auto workContractGroup = work_contract_group::create({});
+    auto workContractGroup = std::make_shared<work_contract_group>(1024);
     // set up a network interface
     network_interface networkInterface({}, workContractGroup);
 
@@ -146,7 +146,6 @@ void demonstrate_udp_multicast_sockets
         // receiver = networkInterface.join_multicast(ip_address{in_addr_any, multicastPortId}, {}, {.closeHandler_ = closeHandler, .receiveHandler_ = receiveHandler}, multicastNetworkId);
     }
     
-
     for (auto i = 0; i < 10; ++i)
     {
         sender.send("this is a multicast message");
@@ -185,11 +184,8 @@ void demonstrate_tcp_sockets
     tcpSocket.set_read_only(); // sends graceful shutdown
     // since the socket system is async (and for simplicity sake) simply sleep for a tiny bit to let the partner respond
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
-
     acceptedTcpSockets.clear(); // close any accepted sockets 
-
-
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
 }
 
 
@@ -204,12 +200,13 @@ int main
     static auto constexpr num_worker_threads = 4;
     std::vector<thread_pool::thread_configuration> threads;
     for (auto i = 0; i < num_worker_threads; ++i)
-        threads.push_back({.function_ = [&](std::stop_token const &)
+        threads.push_back({.function_ = [&](std::stop_token const & stopToken)
                 {
-                    workContractGroup->service_contracts();
+                    while (!stopToken.stop_requested())
+                        workContractGroup->service_contracts();
                 }});
     // add one additional thread for polling
-    threads.push_back({.function_ = [&](std::stop_token const &){networkInterface.poll();}});
+    threads.push_back({.function_ = [&](std::stop_token const & stopToken){while (!stopToken.stop_requested()) networkInterface.poll();}});
     thread_pool workerThreadPool({.threads_ = threads});
 
     demonstrate_tcp_sockets();

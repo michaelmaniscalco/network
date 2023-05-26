@@ -65,7 +65,7 @@ void maniscalco::network::poller::poll
             impl->on_poll_error();
             continue;
         }
-
+int k = EPOLLIN;
         if (event.events & EPOLLIN)
             impl->on_polled();
     }   
@@ -86,9 +86,8 @@ auto maniscalco::network::poller::register_socket
                 .data = {.ptr = reinterpret_cast<socket_base_impl *>(&socket)}
             };
 
-    return {weak_from_this(), 
-            (::epoll_ctl(fileDescriptor_.get(), EPOLL_CTL_ADD, socket.get_file_descriptor().get(), &epollEvent) == 0) ? 
-            socket.get_file_descriptor() : invalid_file_descriptor};
+    return {weak_from_this(), (::epoll_ctl(fileDescriptor_.get(), EPOLL_CTL_ADD, socket.get_file_descriptor().get(), &epollEvent) == 0) 
+            ? socket.get_file_descriptor() : invalid_file_descriptor};
 }
 
 

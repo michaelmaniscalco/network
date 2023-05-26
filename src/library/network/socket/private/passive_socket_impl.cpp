@@ -12,10 +12,8 @@ maniscalco::network::passive_socket_impl::socket_impl
 ):    
     socket_base_impl(ipAddress, {.ioMode_ = config.ioMode_}, eventHandlers, ::socket(PF_INET, SOCK_STREAM, IPPROTO_TCP),
             workContractGroup.create_contract(
-            {
-                .contractHandler_ = [this](){this->accept();},
-                .endContractHandler_ = [this](){this->destroy();}
-            })),
+                    [this](){this->accept();},
+                    [this](){this->destroy();})),
     pollerRegistration_(p.register_socket(*this)),
     acceptHandler_(eventHandlers.acceptHandler_)   
 {

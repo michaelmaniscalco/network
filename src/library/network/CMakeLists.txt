@@ -22,8 +22,8 @@ target_include_directories(network
     PUBLIC
         $<BUILD_INTERFACE:${_network_include_dir}>
         $<INSTALL_INTERFACE:include/network>
-        ${_common_src_path}/src
-        ${_work_contract_src_path}/src
+        ${_include_src_path}/src
+        ${_system_src_path}/src
         ${_fmt_src_path}/include
         ${_type_safe_src_path}/include
 )

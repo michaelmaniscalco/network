@@ -44,10 +44,7 @@ namespace maniscalco::network
             system::work_contract_group & workContractGroup
         ):
             socket_(std::move(socket)),
-            workContract_(workContractGroup.create_contract(
-                    {
-                        .contractHandler_ = [this](){this->send();}
-                    }))
+            workContract_(workContractGroup.create_contract([this](){this->send();}))
         {
         }
 

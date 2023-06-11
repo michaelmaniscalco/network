@@ -184,5 +184,4 @@ namespace maniscalco::network
     static network_id constexpr local_host{INADDR_LOOPBACK};
     static network_id constexpr loop_back{INADDR_LOOPBACK};
     static network_id constexpr in_addr_any{INADDR_ANY};
-    
 }

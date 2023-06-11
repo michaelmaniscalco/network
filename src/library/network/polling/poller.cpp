@@ -65,7 +65,6 @@ void maniscalco::network::poller::poll
             impl->on_poll_error();
             continue;
         }
-int k = EPOLLIN;
         if (event.events & EPOLLIN)
             impl->on_polled();
     }   
@@ -104,9 +103,7 @@ bool maniscalco::network::poller::unregister_socket
 //=============================================================================
 namespace maniscalco::network
 {
-
     template poller_registration poller::register_socket(tcp_socket_impl &);
     template poller_registration poller::register_socket(udp_socket_impl &);
     template poller_registration poller::register_socket(tcp_listener_socket_impl &);
-
 }

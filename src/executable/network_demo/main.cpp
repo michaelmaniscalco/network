@@ -1,8 +1,6 @@
 #include <library/network.h>
 #include <library/system.h>
 
-#include "./network_stream.h"
-
 #include <iostream>
 #include <map>
 

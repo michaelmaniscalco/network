@@ -48,6 +48,5 @@ maniscalco::network::ip_address::operator ::sockaddr_in
 (
 ) const noexcept
 {
-    return {.sin_port = endian_swap<std::endian::native, std::endian::big>(portId_).get(),
-            .sin_addr =  networkId_};
+    return {.sin_port = endian_swap<std::endian::native, std::endian::big>(portId_).get(), .sin_addr =  networkId_};
 }

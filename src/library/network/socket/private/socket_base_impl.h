@@ -3,7 +3,6 @@
 #include <library/network/socket/socket_id.h>
 
 #include <library/network/socket/return_code/connect_result.h>
-#include <library/network/socket/return_code/bind_result.h>
 
 #include <library/network/ip/ip_address.h>
 #include <include/file_descriptor.h>
@@ -20,6 +19,9 @@
 
 namespace maniscalco::network
 {
+
+    enum class bind_result : std::uint32_t;
+
 
     //=========================================================================
     class socket_base_impl :
@@ -48,7 +50,7 @@ namespace maniscalco::network
             event_handlers const &,
             system::file_descriptor,
             system::work_contract
-        ) noexcept;
+        );
 
         socket_base_impl
         (
@@ -57,7 +59,7 @@ namespace maniscalco::network
             event_handlers const &,
             system::file_descriptor,
             system::work_contract
-        ) noexcept;
+        );
 
         virtual ~socket_base_impl();
 

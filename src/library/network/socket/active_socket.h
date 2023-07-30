@@ -3,7 +3,6 @@
 #include "./socket.h"
 #include "./traits/traits.h"
 #include "./return_code/connect_result.h"
-#include "./return_code/bind_result.h"
 #include "./return_code/receive_result.h"
 #include "./return_code/send_result.h"
 
@@ -69,7 +68,16 @@ namespace maniscalco::network
             event_handlers const &,
             system::work_contract_group &,
             poller &
-        );
+        ) requires (udp_protocol_concept<P>);
+
+        socket
+        (
+            network_id,
+            configuration const &,
+            event_handlers const &,
+            system::work_contract_group &,
+            poller &
+        ) requires (tcp_protocol_concept<P>);
 
         socket
         (

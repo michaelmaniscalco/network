@@ -9,15 +9,16 @@ maniscalco::network::passive_socket_impl::socket_impl
     event_handlers const & eventHandlers,
     system::work_contract_group & workContractGroup,
     poller & p
-):    
+) try :    
     socket_base_impl(ipAddress, {.ioMode_ = config.ioMode_}, eventHandlers, ::socket(PF_INET, SOCK_STREAM, IPPROTO_TCP),
-            workContractGroup.create_contract(
-                    [this](){this->accept();},
-                    [this](){this->destroy();})),
+            workContractGroup.create_contract([this](){this->accept();}, [this](){this->destroy();})),
     pollerRegistration_(p.register_socket(*this)),
     acceptHandler_(eventHandlers.acceptHandler_)   
 {
     ::listen(fileDescriptor_.get(), config.backlog_);
+}
+catch (std::exception const & exception)
+{
 }
 
 

@@ -11,10 +11,40 @@ maniscalco::network::active_socket<P>::socket
     event_handlers const & eventHandlers,
     system::work_contract_group & workContractGroup,
     poller & p
-)
+) requires (udp_protocol_concept<P>)
 {
     impl_ = std::move(decltype(impl_)(new impl_type(
             ipAddress, 
+            {
+                .receiveBufferSize_ = config.receiveBufferSize_,
+                .sendBufferSize_ = config.sendBufferSize_,
+                .ioMode_ = config.ioMode_
+            },
+            {
+                eventHandlers.closeHandler_,
+                eventHandlers.pollErrorHandler_,
+                eventHandlers.receiveHandler_,
+                eventHandlers.receiveErrorHandler_,
+                eventHandlers.packetAllocationHandler_
+            },
+            workContractGroup, p), 
+            [](auto * impl){impl->destroy();}));
+}
+
+
+//=============================================================================
+template <maniscalco::network::network_transport_protocol P>
+maniscalco::network::active_socket<P>::socket
+(
+    network_id networkId,
+    configuration const & config,
+    event_handlers const & eventHandlers,
+    system::work_contract_group & workContractGroup,
+    poller & p
+) requires (tcp_protocol_concept<P>)
+{
+    impl_ = std::move(decltype(impl_)(new impl_type(
+            {networkId}, 
             {
                 .receiveBufferSize_ = config.receiveBufferSize_,
                 .sendBufferSize_ = config.sendBufferSize_,

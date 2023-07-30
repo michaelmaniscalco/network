@@ -45,8 +45,8 @@ namespace maniscalco::network
     
     private:
 
-        std::int64_t errorCode_{0};
-        std::size_t bytesSent_{0};
+        std::int64_t    errorCode_{0};
+        std::size_t     bytesSent_{0};
     };
 
 

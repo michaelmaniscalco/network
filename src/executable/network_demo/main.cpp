@@ -20,8 +20,7 @@ namespace
 
     std::map<socket_id, tcp_socket> acceptedTcpSockets;
 
-    static ip_address const any_loopback_ip_address{"127.0.0.1", port_id_any};
-    static ip_address const tcp_listener_ip_address{"127.0.0.1"s, port_id(3000)};
+    static ip_address const any_loopback_ip_address{loop_back, port_id_any};
 
     // set up work contract group
     auto workContractGroup = std::make_shared<work_contract_group>(1024);
@@ -100,11 +99,10 @@ void demonstrate_udp_sockets
     auto udpNetworkStream1 = networkInterface.open_stream<udp_socket>(any_loopback_ip_address, {}, 
             {.closeHandler_ = closeHandler, .receiveHandler_ = receiveHandler, .receiveErrorHandler_ = receiveErrorHandler});
     // but make the second partner a plain old socket (async receive but blocking send)
-    auto udpSocket2 = networkInterface.open_socket<udp_socket>(any_loopback_ip_address, {}, 
+    auto udpSocket2 = networkInterface.udp_connect(any_loopback_ip_address, udpNetworkStream1.get_ip_address(), {}, 
             {.closeHandler_ = closeHandler, .receiveHandler_ = receiveHandler, .receiveErrorHandler_ = receiveErrorHandler});
 
     udpNetworkStream1.connect_to(udpSocket2.get_ip_address());
-    udpSocket2.connect_to(udpNetworkStream1.get_ip_address());
 
     udpNetworkStream1.send("guess what");
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -128,20 +126,16 @@ void demonstrate_udp_multicast_sockets
     port_id multicastPortId{3000};
 
     std::cout << "*** Multicast UDP demonstration ***\n";
-    auto sender = networkInterface.open_socket<udp_socket>(any_loopback_ip_address, {}, 
+    auto sender = networkInterface.udp_connect(any_loopback_ip_address, {multicastNetworkId, multicastPortId}, {}, 
             {.closeHandler_ = closeHandler, .receiveHandler_ = receiveHandler, .receiveErrorHandler_ = receiveErrorHandler});
-    sender.connect_to(ip_address{multicastNetworkId, multicastPortId});
 
     static auto constexpr number_of_receivers = 10;
     std::vector<udp_socket> receivers(number_of_receivers);
     for (auto & receiver : receivers)
     {
         // open udp socket and then join the multicast.
-        receiver = networkInterface.open_socket<udp_socket>(ip_address{in_addr_any, multicastPortId}, {}, 
+        receiver = networkInterface.multicast_join({multicastNetworkId, multicastPortId}, {}, 
             {.closeHandler_ = closeHandler, .receiveHandler_ = receiveHandler, .receiveErrorHandler_ = receiveErrorHandler});
-        receiver.join(multicastNetworkId);
-        // this can also be done in one step with:
-        // receiver = networkInterface.join_multicast(ip_address{in_addr_any, multicastPortId}, {}, {.closeHandler_ = closeHandler, .receiveHandler_ = receiveHandler}, multicastNetworkId);
     }
     
     for (auto i = 0; i < 10; ++i)
@@ -162,11 +156,11 @@ void demonstrate_tcp_sockets
     // send messages back and forth across partnered tcp sockets
 )
 {
-    using namespace maniscalco::system;
-
     std::cout << "*** TCP demonstration ***\n";
-    auto tcpListenerSocket = networkInterface.open_socket<tcp_listener_socket>(tcp_listener_ip_address, {}, {.closeHandler_ = closeHandler, .acceptHandler_ = acceptHandler});
-    auto tcpSocket = networkInterface.open_socket<tcp_socket>(any_loopback_ip_address, 
+    static ip_address const tcp_listener_ip_address{loop_back, port_id(3000)};
+
+    auto tcpListenerSocket = networkInterface.tcp_listen({loop_back, port_id(3000)}, {}, {.closeHandler_ = closeHandler, .acceptHandler_ = acceptHandler});
+    auto tcpSocket = networkInterface.tcp_connect(loop_back, tcp_listener_ip_address,
             {
                 .receiveBufferSize_ = (1 << 20), // demonstrate setting send/receive buffer sizes (works for udp as well)
                 .sendBufferSize_ = (1 << 20)
@@ -177,9 +171,7 @@ void demonstrate_tcp_sockets
                 .receiveErrorHandler_ = receiveErrorHandler
             });
 
-    tcpSocket.connect_to(tcp_listener_ip_address);
     tcpSocket.send("greetings partner!");
-    tcpSocket.set_read_only(); // sends graceful shutdown
     // since the socket system is async (and for simplicity sake) simply sleep for a tiny bit to let the partner respond
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
     acceptedTcpSockets.clear(); // close any accepted sockets 

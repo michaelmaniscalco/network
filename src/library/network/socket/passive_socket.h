@@ -3,7 +3,6 @@
 #include "./socket.h"
 #include "./traits/traits.h"
 #include "./return_code/connect_result.h"
-#include "./return_code/bind_result.h"
 #include <include/file_descriptor.h>
 #include <library/network/ip/ip_address.h>
 
@@ -43,7 +42,7 @@ namespace maniscalco::network
 
         struct configuration
         {
-            std::uint32_t backlog_{default_backlog};
+            std::uint32_t   backlog_{default_backlog};
         };
 
         socket(socket const &) = delete;

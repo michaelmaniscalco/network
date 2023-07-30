@@ -15,22 +15,22 @@ maniscalco::network::active_socket_impl<P>::socket_impl
     event_handlers const & eventHandlers,
     system::work_contract_group & workContractGroup,
     poller & p
-):
+) try :
     socket_base_impl(ipAddress, {.ioMode_ = config.ioMode_}, eventHandlers, 
             (P == network_transport_protocol::udp) ? ::socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP) : ::socket(PF_INET, SOCK_STREAM, IPPROTO_TCP),
-            workContractGroup.create_contract(
-                    [this](){this->receive();},
-                    [this](){this->destroy();})),
+            workContractGroup.create_contract([this](){this->receive();}, [this](){this->destroy();})),
     pollerRegistration_(p.register_socket(*this)),
     receiveHandler_(eventHandlers.receiveHandler_),
     receiveErrorHandler_(eventHandlers.receiveErrorHandler_),
-    packetAllocationHandler_(eventHandlers.packetAllocationHandler_ ? eventHandlers.packetAllocationHandler_ :
-            [](auto, auto desiredSize){return packet(desiredSize);})  
+    packetAllocationHandler_(eventHandlers.packetAllocationHandler_ ? eventHandlers.packetAllocationHandler_ : [](auto, auto desiredSize){return packet(desiredSize);})  
 {
     if (config.receiveBufferSize_ > 0)
         set_socket_option(SOL_SOCKET, SO_RCVBUF, config.receiveBufferSize_);
     if (config.sendBufferSize_ > 0)
         set_socket_option(SOL_SOCKET, SO_SNDBUF, config.sendBufferSize_);
+}
+catch (std::exception const & exception)
+{
 }
 
 
@@ -45,22 +45,23 @@ maniscalco::network::active_socket_impl<P>::socket_impl
     event_handlers const & eventHandlers,
     system::work_contract_group & workContractGroup,
     poller & p
-) requires (tcp_protocol_concept<P>) :
+) requires (tcp_protocol_concept<P>) 
+try :
     socket_base_impl({.ioMode_ = config.ioMode_}, eventHandlers, std::move(fileDescriptor),
-            workContractGroup.create_contract(
-                    [this](){this->receive();},
-                    [this](){this->destroy();})),
+            workContractGroup.create_contract([this](){this->receive();}, [this](){this->destroy();})),
     pollerRegistration_(p.register_socket(*this)),
     receiveHandler_(eventHandlers.receiveHandler_),
     receiveErrorHandler_(eventHandlers.receiveErrorHandler_),
-    packetAllocationHandler_(eventHandlers.packetAllocationHandler_ ? eventHandlers.packetAllocationHandler_ :
-            [](auto, auto desiredSize){return packet(desiredSize);})    
+    packetAllocationHandler_(eventHandlers.packetAllocationHandler_ ? eventHandlers.packetAllocationHandler_ : [](auto, auto desiredSize){return packet(desiredSize);})    
 {
     peerIpAddress_ = get_peer_name();
     if (config.receiveBufferSize_ > 0)
         set_socket_option(SOL_SOCKET, SO_RCVBUF, config.receiveBufferSize_);
     if (config.sendBufferSize_ > 0)
         set_socket_option(SOL_SOCKET, SO_SNDBUF, config.sendBufferSize_);
+}
+catch (std::exception const & exception)
+{
 }
 
 

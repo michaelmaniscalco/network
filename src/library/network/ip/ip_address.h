@@ -32,6 +32,11 @@ namespace maniscalco::network
 
         ip_address
         (
+            network_id
+        ) noexcept;
+
+        ip_address
+        (
             ::sockaddr_in const &
         ) noexcept;
 
@@ -47,9 +52,9 @@ namespace maniscalco::network
 
     private:
 
-        network_id  networkId_;
+        network_id  networkId_{};
 
-        port_id     portId_;
+        port_id     portId_{};
 
     }; // class ip_address
 
@@ -74,6 +79,16 @@ inline maniscalco::network::ip_address::ip_address
 ) noexcept :
     networkId_(networkId),
     portId_(portId)
+{
+}
+
+
+//=============================================================================
+inline maniscalco::network::ip_address::ip_address
+(
+    network_id networkId
+) noexcept :
+    networkId_(networkId)
 {
 }
 

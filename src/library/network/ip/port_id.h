@@ -15,6 +15,7 @@ namespace maniscalco::network
     public:
 
         using value_type = std::uint16_t;
+        static value_type constexpr any{0};
 
         port_id() noexcept = default;
         port_id(port_id const &) noexcept = default;
@@ -33,8 +34,7 @@ namespace maniscalco::network
 
     private:
 
-        value_type value_{};
-
+        value_type value_{any};
     };
 
 
@@ -103,5 +103,5 @@ inline bool maniscalco::network::port_id::is_valid
 //=============================================================================
 namespace maniscalco::network
 {
-    static port_id constexpr port_id_any{0};
+    static port_id constexpr port_id_any{port_id::any};
 }

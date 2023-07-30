@@ -13,9 +13,9 @@ maniscalco::network::passive_socket::socket
 )
 {
     impl_ = std::move(decltype(impl_)(new impl_type(
-            ipAddress, 
+            ipAddress,
             {
-                .backlog_ = 128
+                .backlog_ = config.backlog_
             }, 
             {
                 eventHandlers.closeHandler_,

@@ -37,7 +37,7 @@ namespace maniscalco::network
 
         ip_address
         (
-            ::sockaddr_in const &
+            ::sockaddr_in
         ) noexcept;
 
         network_id get_network_id() const noexcept;

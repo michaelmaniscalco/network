@@ -96,7 +96,7 @@ maniscalco::network::active_socket<P>::socket
 template <maniscalco::network::network_transport_protocol P>
 auto maniscalco::network::active_socket<P>::connect_to
 (
-    ip_address const & destination
+    ip_address destination
 ) noexcept -> connect_result
 {
     return (impl_) ? impl_->connect_to(destination) : connect_result::connect_error;
@@ -123,6 +123,19 @@ auto maniscalco::network::active_socket<P>::send
 ) -> send_result
 {
     return (impl_) ? impl_->send(std::move(buffer)) : send_result{ENOTCONN, 0};
+}
+
+
+//=============================================================================
+template <maniscalco::network::network_transport_protocol P>
+auto maniscalco::network::active_socket<P>::send_to
+(
+    ip_address destinationIpAddress,
+    std::span<char const> buffer
+) -> send_result 
+requires (P == network_transport_protocol::udp)
+{
+    return (impl_) ? impl_->send_to(destinationIpAddress, std::move(buffer)) : send_result{ENOTCONN, 0};
 }
 
 

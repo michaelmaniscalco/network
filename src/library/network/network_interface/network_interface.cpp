@@ -4,11 +4,20 @@
 //=============================================================================
 maniscalco::network::network_interface::network_interface
 (
-    configuration const & config,
-    std::shared_ptr<system::work_contract_group> workContractGroup
+):
+    poller_(std::make_shared<poller>(poller::configuration{})),
+    workContractGroup_({default_capacity})
+{
+}
+
+
+//=============================================================================
+maniscalco::network::network_interface::network_interface
+(
+    configuration const & config
 ):
     poller_(std::make_shared<poller>(config.poller_)),
-    workContractGroup_(workContractGroup)
+    workContractGroup_({config.capacity_})
 {
 }
 
@@ -22,7 +31,7 @@ auto maniscalco::network::network_interface::open_socket
     typename S::event_handlers eventHandlers
 ) -> S
 {
-    return S{std::move(handle), config, eventHandlers, *workContractGroup_, *poller_};
+    return S{std::move(handle), config, eventHandlers, workContractGroup_, *poller_};
 }
 
 
@@ -35,6 +44,18 @@ auto maniscalco::network::network_interface::tcp_listen
 ) -> tcp_listener_socket
 {
     return open_socket<tcp_listener_socket>(ipAddress, config, eventHandlers);
+}
+
+
+//=============================================================================
+auto maniscalco::network::network_interface::tcp_accept
+(
+    system::file_descriptor fileDescriptor,
+    tcp_socket::configuration config,
+    tcp_socket::event_handlers eventHandlers
+) -> tcp_socket
+{
+    return open_socket<tcp_socket>(std::move(fileDescriptor), config, eventHandlers);
 }
 
 
@@ -62,9 +83,22 @@ auto maniscalco::network::network_interface::udp_connect
     udp_socket::event_handlers eventHandlers
 ) -> udp_socket
 {
-    auto udpSocket = open_socket<udp_socket>(localIpAddress, config, eventHandlers);
-    udpSocket.connect_to(remoteIpAddress);
+    auto udpSocket = udp_connectionless(localIpAddress, config, eventHandlers);
+    if (remoteIpAddress.is_valid())
+        udpSocket.connect_to(remoteIpAddress);
     return udpSocket;
+}
+
+
+//=============================================================================
+auto maniscalco::network::network_interface::udp_connectionless
+(
+    ip_address localIpAddress,
+    udp_socket::configuration config,
+    udp_socket::event_handlers eventHandlers
+) -> udp_socket
+{
+    return open_socket<udp_socket>(localIpAddress, config, eventHandlers);
 }
 
 
@@ -88,6 +122,15 @@ void maniscalco::network::network_interface::poll
 )
 {
     poller_->poll();
+}
+
+
+//=============================================================================
+void maniscalco::network::network_interface::service_sockets
+(
+)
+{
+    workContractGroup_.service_contracts();
 }
 
 

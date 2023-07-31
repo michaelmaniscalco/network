@@ -74,6 +74,12 @@ namespace maniscalco::network
             std::span<char const>
         ) requires (udp_protocol_concept<P>);
 
+        send_result send_to
+        (
+            ip_address,
+            std::span<char const>
+        ) requires (udp_protocol_concept<P>);
+
         connect_result connect_to
         (
             ip_address const &

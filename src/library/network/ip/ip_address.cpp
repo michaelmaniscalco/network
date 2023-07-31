@@ -8,13 +8,13 @@
 //=============================================================================
 maniscalco::network::ip_address::ip_address
 (
-    ::sockaddr_in const & socketAddrIn
+    ::sockaddr_in socketAddrIn
 ) noexcept :
     networkId_(socketAddrIn.sin_addr),
     portId_(endian_swap<std::endian::big, std::endian::native>(socketAddrIn.sin_port))
 {
-}
-            
+}  
+
 
 //=============================================================================
 bool maniscalco::network::ip_address::is_valid

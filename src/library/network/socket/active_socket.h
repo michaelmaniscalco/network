@@ -95,9 +95,15 @@ namespace maniscalco::network
             std::span<char const>
         );
 
+        send_result send_to
+        (
+            ip_address,
+            std::span<char const>
+        ) requires (P == network_transport_protocol::udp);
+
         connect_result connect_to
         (
-            ip_address const &
+            ip_address
         ) noexcept;
 
         bool close();

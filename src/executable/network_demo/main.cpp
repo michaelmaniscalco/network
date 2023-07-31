@@ -1,6 +1,9 @@
 #include <library/network.h>
 #include <library/system.h>
 
+#include <include/non_movable.h>
+#include <include/non_copyable.h>
+
 #include <iostream>
 #include <map>
 
@@ -22,10 +25,8 @@ namespace
 
     static ip_address const any_loopback_ip_address{loop_back, port_id_any};
 
-    // set up work contract group
-    auto workContractGroup = std::make_shared<work_contract_group>(1024);
     // set up a network interface
-    network_interface networkInterface({}, workContractGroup);
+    network_interface networkInterface;
 
     auto closeHandler = []
             (
@@ -63,7 +64,7 @@ namespace
                 auto fileDescriptor
             )
             {
-                auto acceptedTcpSocket = networkInterface.open_socket<tcp_socket>(
+                auto acceptedTcpSocket = networkInterface.tcp_accept(
                         std::move(fileDescriptor),
                         {},
                         {
@@ -98,19 +99,18 @@ void demonstrate_udp_sockets
     // for demonstrative puproses. make first partner a 'stream' so that it can support async send
     auto udpNetworkStream1 = networkInterface.open_stream<udp_socket>(any_loopback_ip_address, {}, 
             {.closeHandler_ = closeHandler, .receiveHandler_ = receiveHandler, .receiveErrorHandler_ = receiveErrorHandler});
-    // but make the second partner a plain old socket (async receive but blocking send)
-    auto udpSocket2 = networkInterface.udp_connect(any_loopback_ip_address, udpNetworkStream1.get_ip_address(), {}, 
+    // but make the second partner a plain old socket (async receive but blocking send) and make it connectionless (use send_to)
+    auto udpSocket2 = networkInterface.udp_connectionless(any_loopback_ip_address, {}, 
             {.closeHandler_ = closeHandler, .receiveHandler_ = receiveHandler, .receiveErrorHandler_ = receiveErrorHandler});
 
     udpNetworkStream1.connect_to(udpSocket2.get_ip_address());
-
     udpNetworkStream1.send("guess what");
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    udpSocket2.send("chicken butt!!!");
+    udpSocket2.send_to(udpNetworkStream1.get_ip_address(), "chicken butt!!!");
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
     udpNetworkStream1.send("guess why");
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    udpSocket2.send("chicken thigh!!!");
+    udpSocket2.send_to(udpNetworkStream1.get_ip_address(), "chicken thigh!!!");
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
 }
 
@@ -179,6 +179,7 @@ void demonstrate_tcp_sockets
 }
 
 
+
 //=============================================================================
 int main
 (
@@ -193,7 +194,7 @@ int main
         threads.push_back({.function_ = [&](std::stop_token const & stopToken)
                 {
                     while (!stopToken.stop_requested())
-                        workContractGroup->service_contracts();
+                        networkInterface.service_sockets();
                 }});
     // add one additional thread for polling
     threads.push_back({.function_ = [&](std::stop_token const & stopToken){while (!stopToken.stop_requested()) networkInterface.poll();}});

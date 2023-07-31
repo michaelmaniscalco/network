@@ -198,9 +198,26 @@ auto maniscalco::network::active_socket_impl<P>::send
 ) -> send_result
 requires (udp_protocol_concept<P>) 
 {
+    return send_to({}, buffer);
+}
+
+
+//=============================================================================
+template <maniscalco::network::network_transport_protocol P>
+auto maniscalco::network::active_socket_impl<P>::send_to
+(
+    ip_address destinationIpAddress,
+    std::span<char const> buffer
+) -> send_result
+requires (udp_protocol_concept<P>) 
+{
+    ::sockaddr_in sockAddr = destinationIpAddress;
+    sockAddr.sin_family = AF_INET;
+    auto p = destinationIpAddress.is_valid() ? reinterpret_cast<sockaddr const *>(&sockAddr) : nullptr;
+
     while (true)
     {
-        auto result = ::send(fileDescriptor_.get(), buffer.data(), buffer.size(), MSG_NOSIGNAL);
+        auto result = ::sendto(fileDescriptor_.get(), buffer.data(), buffer.size(), MSG_NOSIGNAL, p, (p == nullptr) ? 0 : sizeof(sockAddr));
         if (result < 0)
         {
             if (result != EAGAIN)
@@ -220,20 +237,24 @@ void maniscalco::network::active_socket_impl<P>::receive
 (
 )
 {
+    ::sockaddr_in sockAddrIn;
+    ::socklen_t addressLength = sizeof(sockAddrIn);
+
     packet buffer = packetAllocationHandler_(id_, 2048);
-    if (auto bytesReceived = ::recv(fileDescriptor_.get(), buffer.data(), buffer.size(), 0); bytesReceived >= 0)
+    if (auto bytesReceived = ::recvfrom(fileDescriptor_.get(), buffer.data(), buffer.size(), 0, 
+            reinterpret_cast<::sockaddr *>(&sockAddrIn), &addressLength); bytesReceived >= 0)
     {
         if constexpr (tcp_protocol_concept<P>)
-        {        
+        {
             if (bytesReceived == 0)        
             {
                 // graceful shutdown
-                std::cout << "socket " << id_ << ": received graceful shutdown\n";
                 close();
                 return;
             }
         }
         buffer.resize(bytesReceived);
+        buffer.from_ = sockAddrIn;
         receiveHandler_(id_, std::move(buffer));
         on_polled(); // there could be more ...
     }

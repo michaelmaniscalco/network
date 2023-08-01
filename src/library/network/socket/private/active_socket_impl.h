@@ -30,7 +30,7 @@ namespace maniscalco::network
 
         struct event_handlers : socket_base_impl::event_handlers
         {
-            using receive_handler = std::function<void(socket_id, packet)>;
+            using receive_handler = std::function<void(socket_id, packet, socket_address)>;
             using packet_allocation_handler = std::function<packet(socket_id, std::size_t)>;
             using receive_error_handler = std::function<void(socket_id, receive_error)>;
 
@@ -48,7 +48,7 @@ namespace maniscalco::network
 
         socket_impl
         (
-            ip_address,
+            socket_address,
             configuration const &,
             event_handlers const &,
             system::work_contract_group &,
@@ -76,13 +76,13 @@ namespace maniscalco::network
 
         send_result send_to
         (
-            ip_address,
+            socket_address,
             std::span<char const>
         ) requires (udp_protocol_concept<P>);
 
         connect_result connect_to
         (
-            ip_address const &
+            socket_address const &
         ) noexcept;
 
         void receive();
@@ -91,20 +91,20 @@ namespace maniscalco::network
 
         bool is_connected() const noexcept;
 
-        ip_address get_peer_ip_address() const noexcept;
+        socket_address get_peer_ip_address() const noexcept;
 
         connect_result join
         (
-            network_id
+            ip_address
         );
 
     private:
 
-        ip_address get_peer_name() const noexcept;
+        socket_address get_peer_name() const noexcept;
 
         bool disconnect();
 
-        ip_address                                          peerIpAddress_;
+        socket_address                                          peerSocketAddress_;
 
         poller_registration                                 pollerRegistration_;
 

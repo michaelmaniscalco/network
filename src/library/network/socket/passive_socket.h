@@ -4,7 +4,7 @@
 #include "./traits/traits.h"
 #include "./return_code/connect_result.h"
 #include <include/file_descriptor.h>
-#include <library/network/ip/ip_address.h>
+#include <library/network/ip/socket_address.h>
 
 #include <library/system.h>
 
@@ -54,7 +54,7 @@ namespace maniscalco::network
 
         socket
         (
-            ip_address,
+            socket_address,
             configuration const &,
             event_handlers const &,
             system::work_contract_group &,
@@ -67,7 +67,7 @@ namespace maniscalco::network
 
         bool is_valid() const noexcept;
 
-        ip_address get_ip_address() const noexcept;
+        socket_address get_ip_address() const noexcept;
 
         socket_id get_id() const;
         

@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <string>
 #include <iostream>
+#include <charconv>
 
 
 namespace maniscalco::network
@@ -22,6 +23,11 @@ namespace maniscalco::network
         port_id & operator = (port_id const &) noexcept = default;
         port_id(port_id &&) noexcept = default;
         port_id & operator = (port_id &&) noexcept = default;
+
+        port_id
+        (
+            std::string_view const
+        );
 
         explicit constexpr port_id
         (

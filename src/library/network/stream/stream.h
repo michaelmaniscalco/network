@@ -61,7 +61,7 @@ namespace maniscalco::network
 
         connect_result connect_to
         (
-            ip_address const & destination
+            socket_address const & destination
         ) noexcept
         {
             return socket_.connect_to(destination);
@@ -71,11 +71,11 @@ namespace maniscalco::network
 
         bool is_valid() const noexcept{return socket_.is_valid();}
 
-        ip_address get_ip_address() const noexcept{return socket_.get_ip_address();}
+        socket_address get_ip_address() const noexcept{return socket_.get_ip_address();}
 
         bool is_connected() const noexcept{return socket_.is_connected();}
 
-        ip_address get_connected_ip_address() const noexcept{return socket_.get_connected_ip_address();}
+        socket_address get_connected_ip_address() const noexcept{return socket_.get_connected_ip_address();}
 
 
     private:

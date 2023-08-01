@@ -5,7 +5,7 @@
 //=============================================================================
 maniscalco::network::passive_socket::socket
 (
-    ip_address ipAddress,
+    socket_address socketAddress,
     configuration const & config,
     event_handlers const & eventHandlers,
     system::work_contract_group & workContractGroup,
@@ -13,7 +13,7 @@ maniscalco::network::passive_socket::socket
 )
 {
     impl_ = std::move(decltype(impl_)(new impl_type(
-            ipAddress,
+            socketAddress,
             {
                 .backlog_ = config.backlog_
             }, 
@@ -48,9 +48,9 @@ bool maniscalco::network::passive_socket::is_valid
 //=============================================================================
 auto maniscalco::network::passive_socket::get_ip_address
 (
-) const noexcept -> ip_address
+) const noexcept -> socket_address
 {
-    return (impl_) ? impl_->get_ip_address() : ip_address{};
+    return (impl_) ? impl_->get_ip_address() : socket_address{};
 }
 
 

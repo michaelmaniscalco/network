@@ -23,7 +23,7 @@ namespace
 
     std::map<socket_id, tcp_socket> acceptedTcpSockets;
 
-    static ip_address const any_loopback_ip_address{loop_back, port_id_any};
+    static socket_address const any_loopback_socket_address{loop_back, port_id_any};
 
     // set up a network interface
     network_interface networkInterface;
@@ -40,11 +40,12 @@ namespace
     auto receiveHandler = []
             (
                 auto socketId,
-                auto packet
+                auto packet, 
+                auto senderSocketAddress
             )
             {
                 std::lock_guard lg(mutex);
-                std::cout << "socket " << socketId << ": received message: \"" << 
+                std::cout << "socket [" << socketId << "] received message: \"" << 
                         std::string((char const *)packet.data(), packet.size()) << "\"\n";
             };
 
@@ -72,10 +73,11 @@ namespace
                             .receiveHandler_ = [&]
                                     (
                                         auto socketId,
-                                        auto packet
+                                        auto packet,
+                                        auto senderSocketAddress
                                     )
                                     {
-                                        receiveHandler(socketId, packet);
+                                        receiveHandler(socketId, packet, senderSocketAddress);
                                         if (auto iter = acceptedTcpSockets.find(socketId); iter != acceptedTcpSockets.end())
                                             iter->second.send("right back at you good buddy!");
                                     }
@@ -97,11 +99,17 @@ void demonstrate_udp_sockets
 {
     std::cout << "*** UDP demonstration ***\n";
     // for demonstrative puproses. make first partner a 'stream' so that it can support async send
-    auto udpNetworkStream1 = networkInterface.open_stream<udp_socket>(any_loopback_ip_address, {}, 
+    auto udpNetworkStream1 = networkInterface.open_stream<udp_socket>(any_loopback_socket_address, {}, 
             {.closeHandler_ = closeHandler, .receiveHandler_ = receiveHandler, .receiveErrorHandler_ = receiveErrorHandler});
     // but make the second partner a plain old socket (async receive but blocking send) and make it connectionless (use send_to)
-    auto udpSocket2 = networkInterface.udp_connectionless(any_loopback_ip_address, {}, 
-            {.closeHandler_ = closeHandler, .receiveHandler_ = receiveHandler, .receiveErrorHandler_ = receiveErrorHandler});
+    auto customReceiveHandler = [&](auto socketId, auto packet, auto senderSocketAddress)
+            {
+                // connectionless socket so lets log where this packet came from too
+                std::cout << "received datagram from " << senderSocketAddress << "\n";
+                receiveHandler(socketId, std::move(packet), senderSocketAddress);
+            };
+    auto udpSocket2 = networkInterface.udp_connectionless(any_loopback_socket_address, {}, 
+            {.closeHandler_ = closeHandler, .receiveHandler_ = customReceiveHandler, .receiveErrorHandler_ = receiveErrorHandler});
 
     udpNetworkStream1.connect_to(udpSocket2.get_ip_address());
     udpNetworkStream1.send("guess what");
@@ -122,11 +130,11 @@ void demonstrate_udp_multicast_sockets
     // see README for more details
 )
 {
-    network_id multicastNetworkId{"239.0.0.1"};
+    ip_address multicastIpAddress{"239.0.0.1"};
     port_id multicastPortId{3000};
 
     std::cout << "*** Multicast UDP demonstration ***\n";
-    auto sender = networkInterface.udp_connect(any_loopback_ip_address, {multicastNetworkId, multicastPortId}, {}, 
+    auto sender = networkInterface.udp_connect(any_loopback_socket_address, {multicastIpAddress, multicastPortId}, {}, 
             {.closeHandler_ = closeHandler, .receiveHandler_ = receiveHandler, .receiveErrorHandler_ = receiveErrorHandler});
 
     static auto constexpr number_of_receivers = 10;
@@ -134,7 +142,7 @@ void demonstrate_udp_multicast_sockets
     for (auto & receiver : receivers)
     {
         // open udp socket and then join the multicast.
-        receiver = networkInterface.multicast_join({multicastNetworkId, multicastPortId}, {}, 
+        receiver = networkInterface.multicast_join({multicastIpAddress, multicastPortId}, {}, 
             {.closeHandler_ = closeHandler, .receiveHandler_ = receiveHandler, .receiveErrorHandler_ = receiveErrorHandler});
     }
     
@@ -157,7 +165,7 @@ void demonstrate_tcp_sockets
 )
 {
     std::cout << "*** TCP demonstration ***\n";
-    static ip_address const tcp_listener_ip_address{loop_back, port_id(3000)};
+    static socket_address const tcp_listener_ip_address{loop_back, port_id(3000)};
 
     auto tcpListenerSocket = networkInterface.tcp_listen({loop_back, port_id(3000)}, {}, {.closeHandler_ = closeHandler, .acceptHandler_ = acceptHandler});
     auto tcpSocket = networkInterface.tcp_connect(loop_back, tcp_listener_ip_address,

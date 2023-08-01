@@ -39,7 +39,7 @@ namespace maniscalco::network
 
         socket_impl
         (
-            ip_address,
+            socket_address,
             configuration const &,
             event_handlers const &,
             system::work_contract_group &,

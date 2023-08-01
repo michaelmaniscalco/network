@@ -1,22 +1,27 @@
 #pragma once
 
-#include "./network_id.h"
-#include "./port_id.h"
+#include <include/endian.h>
 
 #include <fmt/format.h>
 
+#include <cstdint>
 #include <string>
+#include <string_view>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+
 #include <iostream>
 
 
 namespace maniscalco::network
 {
 
-    // TODO: abstract to include version (4 vs 6)
-
     class ip_address
     {
     public:
+
+        using value_type = std::uint32_t;
 
         ip_address() noexcept = default;
         ip_address(ip_address const &) noexcept = default;
@@ -24,39 +29,49 @@ namespace maniscalco::network
         ip_address(ip_address &&) noexcept = default;
         ip_address & operator = (ip_address &&) noexcept = default;
 
+        template <std::size_t N>
         ip_address
         (
-            network_id,
-            port_id
+            char const (&)[N]
         ) noexcept;
 
-        ip_address
+        ip_address  
         (
-            network_id
+            std::string_view const
         ) noexcept;
 
-        ip_address
+        explicit constexpr ip_address
         (
-            ::sockaddr_in
+            value_type
         ) noexcept;
 
-        network_id get_network_id() const noexcept;
-
-        port_id get_port_id() const noexcept;
+        explicit constexpr ip_address
+        (
+            ::in_addr
+        ) noexcept;
         
-        operator ::sockaddr_in() const noexcept;
+        value_type get() const noexcept;
 
         bool is_valid() const noexcept;
 
-        bool is_multicast() const noexcept;
+        operator ::in_addr() const noexcept;
 
+        bool is_multicast() const noexcept;
+        
     private:
 
-        network_id  networkId_{};
+        value_type value_{};
+    };
 
-        port_id     portId_{};
 
-    }; // class ip_address
+    //=========================================================================
+    static ip_address byte_swap
+    (
+        ip_address source
+    ) 
+    {
+        return ip_address(maniscalco::byte_swap(source.get()));
+    }
 
 
     //=========================================================================
@@ -65,41 +80,12 @@ namespace maniscalco::network
         ip_address ipAddress
     )
     {
-        return fmt::format("{}:{}", to_string(ipAddress.get_network_id()), to_string(ipAddress.get_port_id()));     
+        auto value = ipAddress.get();
+        auto p = reinterpret_cast<std::uint8_t const *>(&value);
+        return fmt::format("{}.{}.{}.{}", p[3], p[2], p[1], p[0]);       
     }
 
 } // namespace maniscalco::network
-
-
-//=============================================================================
-inline maniscalco::network::ip_address::ip_address
-(
-    network_id networkId,
-    port_id portId
-) noexcept :
-    networkId_(networkId),
-    portId_(portId)
-{
-}
-
-
-//=============================================================================
-inline maniscalco::network::ip_address::ip_address
-(
-    network_id networkId
-) noexcept :
-    networkId_(networkId)
-{
-}
-
-
-//=============================================================================
-inline bool maniscalco::network::ip_address::is_multicast
-(
-) const noexcept
-{
-    return networkId_.is_multicast();
-}
 
 
 //=============================================================================
@@ -111,4 +97,91 @@ static std::ostream & operator <<
 {
     stream << to_string(ipAddress);
     return stream;
+}
+
+
+//=============================================================================
+constexpr maniscalco::network::ip_address::ip_address
+(
+    std::uint32_t value
+) noexcept :
+    value_(value)
+{
+}
+
+
+//=============================================================================
+constexpr maniscalco::network::ip_address::ip_address
+(
+    ::in_addr inAddr
+) noexcept :
+    value_(endian_swap<std::endian::big, std::endian::native>(inAddr.s_addr))
+{
+}
+
+
+//=============================================================================
+inline maniscalco::network::ip_address::ip_address  
+(
+    std::string_view const value
+) noexcept :
+    ip_address(endian_swap<std::endian::big, std::endian::native>(::inet_addr(value.data())))
+{
+}
+
+
+//=============================================================================
+template <std::size_t N>
+inline maniscalco::network::ip_address::ip_address
+( 
+    char const (&value)[N]
+) noexcept:
+    ip_address(endian_swap<std::endian::big, std::endian::native>(::inet_addr(value)))
+{
+}
+
+
+//=============================================================================
+inline std::uint32_t maniscalco::network::ip_address::get
+(
+) const noexcept
+{
+    return value_;
+}
+
+
+//=============================================================================
+inline bool maniscalco::network::ip_address::is_multicast
+(
+) const noexcept
+{
+    static auto constexpr mask = 0xe0000000ul;
+    return ((value_ & mask) == mask);  
+}
+
+
+//=============================================================================
+inline bool maniscalco::network::ip_address::is_valid
+(
+) const noexcept
+{
+    return (value_ != 0);
+}
+
+
+//=============================================================================
+inline maniscalco::network::ip_address::operator ::in_addr
+(
+) const noexcept
+{
+    return {.s_addr = endian_swap<std::endian::native, std::endian::big>(value_)};
+}
+
+
+//=============================================================================
+namespace maniscalco::network
+{
+    static ip_address constexpr local_host{INADDR_LOOPBACK};
+    static ip_address constexpr loop_back{INADDR_LOOPBACK};
+    static ip_address constexpr in_addr_any{INADDR_ANY};
 }

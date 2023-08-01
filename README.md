@@ -13,11 +13,9 @@ Example:
 ~$ ip address
 <SNIP>
 3: wlp5s0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default qlen 1000
-    link/ether 78:2b:46:c4:2b:1a brd ff:ff:ff:ff:ff:ff
+    link/ether xx:xx:xx:xx:xx:xx brd ff:ff:ff:ff:ff:ff
     inet 192.168.1.161/24 brd 192.168.1.255 scope global dynamic noprefixroute wlp5s0
        valid_lft 84299sec preferred_lft 84299sec
-    inet6 fe80::bc1b:2eed:74d2:9c7c/64 scope link noprefixroute 
-       valid_lft forever preferred_lft forever
 </SNIP>
 ```
 
@@ -33,12 +31,10 @@ Verify that `239.0.0.1` now exits:
 $ ip address
 <SNIP>
 3: wlp5s0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default qlen 1000
-    link/ether 78:2b:46:c4:2b:1a brd ff:ff:ff:ff:ff:ff
+    link/ether xx:xx:xx:xx:xx:xx brd ff:ff:ff:ff:ff:ff
     inet 192.168.1.161/24 brd 192.168.1.255 scope global dynamic noprefixroute wlp5s0
        valid_lft 84116sec preferred_lft 84116sec
-    inet 239.0.0.1/32 scope global wlp5s0                             <----- ip was added
-       valid_lft forever preferred_lft forever
-    inet6 fe80::bc1b:2eed:74d2:9c7c/64 scope link noprefixroute 
+    inet 239.0.0.1/32 scope global wlp5s0           <----- ip was added
        valid_lft forever preferred_lft forever
 </SNIP>
 ```
@@ -50,3 +46,6 @@ To remove `239.0.0.1`: (in my case from interface `wlp5s0`)
 ```
 ~$ sudo ip addr del 239.0.0.1/32 dev wlp5s0
 ```
+
+# examples:
+

@@ -6,7 +6,7 @@
 template <maniscalco::network::network_transport_protocol P>
 maniscalco::network::active_socket<P>::socket
 (
-    ip_address ipAddress,
+    socket_address socketAddress,
     configuration const & config,
     event_handlers const & eventHandlers,
     system::work_contract_group & workContractGroup,
@@ -14,7 +14,7 @@ maniscalco::network::active_socket<P>::socket
 ) requires (udp_protocol_concept<P>)
 {
     impl_ = std::move(decltype(impl_)(new impl_type(
-            ipAddress, 
+            socketAddress, 
             {
                 .receiveBufferSize_ = config.receiveBufferSize_,
                 .sendBufferSize_ = config.sendBufferSize_,
@@ -36,7 +36,7 @@ maniscalco::network::active_socket<P>::socket
 template <maniscalco::network::network_transport_protocol P>
 maniscalco::network::active_socket<P>::socket
 (
-    network_id networkId,
+    ip_address ipAddress,
     configuration const & config,
     event_handlers const & eventHandlers,
     system::work_contract_group & workContractGroup,
@@ -44,7 +44,7 @@ maniscalco::network::active_socket<P>::socket
 ) requires (tcp_protocol_concept<P>)
 {
     impl_ = std::move(decltype(impl_)(new impl_type(
-            {networkId}, 
+            {ipAddress}, 
             {
                 .receiveBufferSize_ = config.receiveBufferSize_,
                 .sendBufferSize_ = config.sendBufferSize_,
@@ -96,7 +96,7 @@ maniscalco::network::active_socket<P>::socket
 template <maniscalco::network::network_transport_protocol P>
 auto maniscalco::network::active_socket<P>::connect_to
 (
-    ip_address destination
+    socket_address destination
 ) noexcept -> connect_result
 {
     return (impl_) ? impl_->connect_to(destination) : connect_result::connect_error;
@@ -107,11 +107,11 @@ auto maniscalco::network::active_socket<P>::connect_to
 template <maniscalco::network::network_transport_protocol P>
 auto maniscalco::network::active_socket<P>::join
 (
-    network_id networkId
+    ip_address ipAddress
 ) -> connect_result 
 requires (P == network_transport_protocol::udp)
 {
-    return (impl_) ? impl_->join(networkId) : connect_result::connect_error;
+    return (impl_) ? impl_->join(ipAddress) : connect_result::connect_error;
 }
 
 
@@ -130,12 +130,12 @@ auto maniscalco::network::active_socket<P>::send
 template <maniscalco::network::network_transport_protocol P>
 auto maniscalco::network::active_socket<P>::send_to
 (
-    ip_address destinationIpAddress,
+    socket_address destinationSocketAddress,
     std::span<char const> buffer
 ) -> send_result 
 requires (P == network_transport_protocol::udp)
 {
-    return (impl_) ? impl_->send_to(destinationIpAddress, std::move(buffer)) : send_result{ENOTCONN, 0};
+    return (impl_) ? impl_->send_to(destinationSocketAddress, std::move(buffer)) : send_result{ENOTCONN, 0};
 }
 
 
@@ -163,9 +163,9 @@ bool maniscalco::network::active_socket<P>::is_valid
 template <maniscalco::network::network_transport_protocol P>
 auto maniscalco::network::active_socket<P>::get_ip_address
 (
-) const noexcept -> ip_address
+) const noexcept -> socket_address
 {
-    return (impl_) ? impl_->get_ip_address() : ip_address{};
+    return (impl_) ? impl_->get_ip_address() : socket_address{};
 }
 
 
@@ -183,9 +183,9 @@ bool maniscalco::network::active_socket<P>::is_connected
 template <maniscalco::network::network_transport_protocol P>
 auto maniscalco::network::active_socket<P>::get_peer_ip_address
 (
-) const noexcept -> ip_address
+) const noexcept -> socket_address
 {
-    return (impl_) ? impl_->get_peer_ip_address() : ip_address{};
+    return (impl_) ? impl_->get_peer_ip_address() : socket_address{};
 }
 
 

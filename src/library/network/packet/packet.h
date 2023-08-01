@@ -1,6 +1,6 @@
 #pragma once
 
-#include <library/network/ip/ip_address.h>
+#include <library/network/ip/socket_address.h>
 #include <span>
 #include <cstdint>
 #include <vector>
@@ -37,11 +37,9 @@ namespace maniscalco::network
         auto data() const{return value_.data();}
         auto resize(auto size){return value_.resize(size);}
 
-  //  private:
+    private:
 
         std::vector<char>   value_;
-
-        ip_address          from_;
     };
 
 }

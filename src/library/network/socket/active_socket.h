@@ -6,7 +6,7 @@
 #include "./return_code/receive_result.h"
 #include "./return_code/send_result.h"
 
-#include <library/network/ip/ip_address.h>
+#include <library/network/ip/socket_address.h>
 #include <library/network/packet/packet.h>
 
 #include <include/file_descriptor.h>
@@ -36,7 +36,7 @@ namespace maniscalco::network
         {
             using close_handler = std::function<void(socket_id)>;
             using poll_error_handler = std::function<void(socket_id)>;
-            using receive_handler = std::function<void(socket_id, packet)>;
+            using receive_handler = std::function<void(socket_id, packet, socket_address)>;
             using receive_error_handler = std::function<void(socket_id, receive_error)>;
             using packet_allocation_handler = std::function<packet(socket_id, std::size_t)>;
 
@@ -63,7 +63,7 @@ namespace maniscalco::network
 
         socket
         (
-            ip_address,
+            socket_address,
             configuration const &,
             event_handlers const &,
             system::work_contract_group &,
@@ -72,7 +72,7 @@ namespace maniscalco::network
 
         socket
         (
-            network_id,
+            ip_address,
             configuration const &,
             event_handlers const &,
             system::work_contract_group &,
@@ -97,30 +97,30 @@ namespace maniscalco::network
 
         send_result send_to
         (
-            ip_address,
+            socket_address,
             std::span<char const>
         ) requires (P == network_transport_protocol::udp);
 
         connect_result connect_to
         (
-            ip_address
+            socket_address
         ) noexcept;
 
         bool close();
 
         bool is_valid() const noexcept;
 
-        ip_address get_ip_address() const noexcept;
+        socket_address get_ip_address() const noexcept;
 
         bool is_connected() const noexcept;
 
-        ip_address get_peer_ip_address() const noexcept;
+        socket_address get_peer_ip_address() const noexcept;
 
         socket_id get_id() const;
         
         connect_result join
         (
-            network_id
+            ip_address
         ) requires (P == network_transport_protocol::udp);
 
         bool shutdown() noexcept;

@@ -1,7 +1,8 @@
 add_library(network
     ./network.cpp
     ./socket/socket_id.cpp
-    ./ip/ip_address.cpp
+    ./ip/socket_address.cpp
+    ./ip/port_id.cpp
     ./socket/active_socket.cpp
     ./socket/passive_socket.cpp
     ./polling/poller.cpp

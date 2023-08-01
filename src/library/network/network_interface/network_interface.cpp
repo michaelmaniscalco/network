@@ -38,12 +38,12 @@ auto maniscalco::network::network_interface::open_socket
 //=============================================================================
 auto maniscalco::network::network_interface::tcp_listen
 (
-    ip_address ipAddress,
+    socket_address socketAddress,
     tcp_listener_socket::configuration config,
     tcp_listener_socket::event_handlers eventHandlers
 ) -> tcp_listener_socket
 {
-    return open_socket<tcp_listener_socket>(ipAddress, config, eventHandlers);
+    return open_socket<tcp_listener_socket>(socketAddress, config, eventHandlers);
 }
 
 
@@ -62,14 +62,14 @@ auto maniscalco::network::network_interface::tcp_accept
 //=============================================================================
 auto maniscalco::network::network_interface::tcp_connect
 (
-    network_id localNetworkId,
-    ip_address remoteIpAddress,
+    ip_address localIpAddress,
+    socket_address remoteSocketAddress,
     tcp_socket::configuration config,
     tcp_socket::event_handlers eventHandlers
 ) -> tcp_socket
 {
-    auto tcpSocket = open_socket<tcp_socket>(localNetworkId, config, eventHandlers);
-    tcpSocket.connect_to(remoteIpAddress);
+    auto tcpSocket = open_socket<tcp_socket>(localIpAddress, config, eventHandlers);
+    tcpSocket.connect_to(remoteSocketAddress);
     return tcpSocket;
 }
 
@@ -77,15 +77,15 @@ auto maniscalco::network::network_interface::tcp_connect
 //=============================================================================
 auto maniscalco::network::network_interface::udp_connect
 (
-    ip_address localIpAddress,
-    ip_address remoteIpAddress,
+    socket_address localSocketAddress,
+    socket_address remoteSocketAddress,
     udp_socket::configuration config,
     udp_socket::event_handlers eventHandlers
 ) -> udp_socket
 {
-    auto udpSocket = udp_connectionless(localIpAddress, config, eventHandlers);
-    if (remoteIpAddress.is_valid())
-        udpSocket.connect_to(remoteIpAddress);
+    auto udpSocket = udp_connectionless(localSocketAddress, config, eventHandlers);
+    if (remoteSocketAddress.is_valid())
+        udpSocket.connect_to(remoteSocketAddress);
     return udpSocket;
 }
 
@@ -93,25 +93,25 @@ auto maniscalco::network::network_interface::udp_connect
 //=============================================================================
 auto maniscalco::network::network_interface::udp_connectionless
 (
-    ip_address localIpAddress,
+    socket_address localSocketAddress,
     udp_socket::configuration config,
     udp_socket::event_handlers eventHandlers
 ) -> udp_socket
 {
-    return open_socket<udp_socket>(localIpAddress, config, eventHandlers);
+    return open_socket<udp_socket>(localSocketAddress, config, eventHandlers);
 }
 
 
 //=============================================================================
 auto maniscalco::network::network_interface::multicast_join
 (
-    ip_address ipAddress,
+    socket_address socketAddress,
     udp_socket::configuration config,
     udp_socket::event_handlers eventHandlers
 ) -> udp_socket
 {
-    auto udpSocket = open_socket<udp_socket>(ip_address{in_addr_any, ipAddress.get_port_id()}, config, eventHandlers);
-    udpSocket.join(ipAddress.get_network_id());
+    auto udpSocket = open_socket<udp_socket>(socket_address{in_addr_any, socketAddress.get_port_id()}, config, eventHandlers);
+    udpSocket.join(socketAddress.get_network_id());
     return udpSocket;
 }
 
@@ -138,7 +138,7 @@ void maniscalco::network::network_interface::service_sockets
 namespace maniscalco::network
 {
     template tcp_socket network_interface::open_socket(system::file_descriptor, tcp_socket::configuration, tcp_socket::event_handlers);
-    template tcp_socket network_interface::open_socket(network_id, tcp_socket::configuration, tcp_socket::event_handlers);
-    template tcp_listener_socket network_interface::open_socket(ip_address, tcp_listener_socket::configuration, tcp_listener_socket::event_handlers);
-    template udp_socket network_interface::open_socket(ip_address, udp_socket::configuration, udp_socket::event_handlers);
+    template tcp_socket network_interface::open_socket(ip_address, tcp_socket::configuration, tcp_socket::event_handlers);
+    template tcp_listener_socket network_interface::open_socket(socket_address, tcp_listener_socket::configuration, tcp_listener_socket::event_handlers);
+    template udp_socket network_interface::open_socket(socket_address, udp_socket::configuration, udp_socket::event_handlers);
 }

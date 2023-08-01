@@ -10,13 +10,13 @@
 template <maniscalco::network::network_transport_protocol P>
 maniscalco::network::active_socket_impl<P>::socket_impl
 (
-    ip_address ipAddress,
+    socket_address socketAddress,
     configuration const & config,
     event_handlers const & eventHandlers,
     system::work_contract_group & workContractGroup,
     poller & p
 ) try :
-    socket_base_impl(ipAddress, {.ioMode_ = config.ioMode_}, eventHandlers, 
+    socket_base_impl(socketAddress, {.ioMode_ = config.ioMode_}, eventHandlers, 
             (P == network_transport_protocol::udp) ? ::socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP) : ::socket(PF_INET, SOCK_STREAM, IPPROTO_TCP),
             workContractGroup.create_contract([this](){this->receive();}, [this](){this->destroy();})),
     pollerRegistration_(p.register_socket(*this)),
@@ -54,7 +54,7 @@ try :
     receiveErrorHandler_(eventHandlers.receiveErrorHandler_),
     packetAllocationHandler_(eventHandlers.packetAllocationHandler_ ? eventHandlers.packetAllocationHandler_ : [](auto, auto desiredSize){return packet(desiredSize);})    
 {
-    peerIpAddress_ = get_peer_name();
+    peerSocketAddress_ = get_peer_name();
     if (config.receiveBufferSize_ > 0)
         set_socket_option(SOL_SOCKET, SO_RCVBUF, config.receiveBufferSize_);
     if (config.sendBufferSize_ > 0)
@@ -69,7 +69,7 @@ catch (std::exception const & exception)
 template <maniscalco::network::network_transport_protocol P>
 auto maniscalco::network::active_socket_impl<P>::connect_to
 (
-    ip_address const & destination
+    socket_address const & destination
 ) noexcept -> connect_result
 {
     if (!destination.is_valid())
@@ -86,7 +86,7 @@ auto maniscalco::network::active_socket_impl<P>::connect_to
     auto result = ::connect(fileDescriptor_.get(), (sockaddr const *)&socketAddress, sizeof(socketAddress));
     if ((result != 0) && (errno != EINPROGRESS))
         return connect_result::connect_error;
-    peerIpAddress_ = destination;
+    peerSocketAddress_ = destination;
 
     set_socket_option(IPPROTO_IP, IP_MULTICAST_TTL, 8);
     return connect_result::success;
@@ -97,7 +97,7 @@ auto maniscalco::network::active_socket_impl<P>::connect_to
 template <>
 auto maniscalco::network::tcp_socket_impl::join
 (
-    network_id
+    ip_address
 ) -> connect_result = delete;
 
 
@@ -105,10 +105,10 @@ auto maniscalco::network::tcp_socket_impl::join
 template <>
 auto maniscalco::network::udp_socket_impl::join
 (
-    network_id networkId
+    ip_address ipAddress
 ) -> connect_result
 {
-    if (!networkId.is_valid())
+    if (!ipAddress.is_valid())
         return connect_result::invalid_destination;
 
     if (!fileDescriptor_.is_valid())
@@ -120,14 +120,14 @@ auto maniscalco::network::udp_socket_impl::join
     // join multicast
     ::ip_mreq mreq;
     ::memset(&mreq, 0x00, sizeof(mreq));
-    mreq.imr_multiaddr = networkId;
+    mreq.imr_multiaddr = ipAddress;
     mreq.imr_interface = in_addr_any;
     if (!set_socket_option(IPPROTO_IP, IP_ADD_MEMBERSHIP, mreq))
     {
         // TODO: log failure
         return connect_result::connect_error;
     }
-    peerIpAddress_ = {networkId, port_id{0}};
+    peerSocketAddress_ = {ipAddress, port_id{0}};
     set_io_mode(system::io_mode::read);
     return connect_result::success;
 }
@@ -144,19 +144,19 @@ bool maniscalco::network::active_socket_impl<P>::disconnect
 
     if constexpr (P == network_transport_protocol::udp)
     {
-        if (peerIpAddress_.is_multicast())
+        if (peerSocketAddress_.is_multicast())
         {
             // drop multicast membership
             ::ip_mreq mreq;
             ::memset(&mreq, 0x00, sizeof(mreq));
-            mreq.imr_multiaddr = peerIpAddress_.get_network_id();
+            mreq.imr_multiaddr = peerSocketAddress_.get_network_id();
             mreq.imr_interface = in_addr_any;
             if (!set_socket_option(IPPROTO_IP, IP_DROP_MEMBERSHIP, mreq))
             {
                 // TODO: log failure
                 return false;
             }
-            peerIpAddress_ = {};
+            peerSocketAddress_ = {};
             return true;
         }
     }
@@ -206,14 +206,14 @@ requires (udp_protocol_concept<P>)
 template <maniscalco::network::network_transport_protocol P>
 auto maniscalco::network::active_socket_impl<P>::send_to
 (
-    ip_address destinationIpAddress,
+    socket_address destinationSocketAddress,
     std::span<char const> buffer
 ) -> send_result
 requires (udp_protocol_concept<P>) 
 {
-    ::sockaddr_in sockAddr = destinationIpAddress;
+    ::sockaddr_in sockAddr = destinationSocketAddress;
     sockAddr.sin_family = AF_INET;
-    auto p = destinationIpAddress.is_valid() ? reinterpret_cast<sockaddr const *>(&sockAddr) : nullptr;
+    auto p = destinationSocketAddress.is_valid() ? reinterpret_cast<sockaddr const *>(&sockAddr) : nullptr;
 
     while (true)
     {
@@ -254,8 +254,7 @@ void maniscalco::network::active_socket_impl<P>::receive
             }
         }
         buffer.resize(bytesReceived);
-        buffer.from_ = sockAddrIn;
-        receiveHandler_(id_, std::move(buffer));
+        receiveHandler_(id_, std::move(buffer), sockAddrIn);
         on_polled(); // there could be more ...
     }
     else
@@ -298,7 +297,7 @@ bool maniscalco::network::active_socket_impl<P>::is_connected
 (
 ) const noexcept
 {
-    return (peerIpAddress_.is_valid());
+    return (peerSocketAddress_.is_valid());
 }
 
 
@@ -306,9 +305,9 @@ bool maniscalco::network::active_socket_impl<P>::is_connected
 template <maniscalco::network::network_transport_protocol P>
 auto maniscalco::network::active_socket_impl<P>::get_peer_ip_address
 (
-) const noexcept -> ip_address
+) const noexcept -> socket_address
 {
-    return peerIpAddress_;
+    return peerSocketAddress_;
 }
 
 
@@ -316,7 +315,7 @@ auto maniscalco::network::active_socket_impl<P>::get_peer_ip_address
 template <maniscalco::network::network_transport_protocol P>
 auto maniscalco::network::active_socket_impl<P>::get_peer_name
 (
-) const noexcept -> ip_address
+) const noexcept -> socket_address
 {
     ::sockaddr_in socketAddress;
     socketAddress.sin_family = AF_INET;

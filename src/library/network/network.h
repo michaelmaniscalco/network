@@ -8,7 +8,7 @@
 namespace maniscalco::network
 {
 
-    network_id get_network_id_from_hostname
+    ip_address get_network_id_from_hostname
     (
         std::string
     );

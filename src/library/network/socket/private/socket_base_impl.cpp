@@ -57,7 +57,7 @@ namespace maniscalco::network
 //=============================================================================
 maniscalco::network::socket_base_impl::socket_base_impl
 (
-    ip_address ipAddress,
+    socket_address socketAddress,
     configuration const & config,
     event_handlers const & eventHandlers,
     system::file_descriptor fileDescriptor,
@@ -70,9 +70,9 @@ maniscalco::network::socket_base_impl::socket_base_impl
 {
     if (auto success = set_socket_option(SOL_SOCKET, SO_REUSEADDR, 1); !success)
         throw std::runtime_error("socket_base_impl::set reuse address failure");
-    if (!ipAddress.is_multicast())
+    if (!socketAddress.is_multicast())
     {
-        auto bindResult = bind(ipAddress);
+        auto bindResult = bind(socketAddress);
         switch (bindResult)
         {
             case bind_result::success:
@@ -87,7 +87,7 @@ maniscalco::network::socket_base_impl::socket_base_impl
                 throw std::runtime_error("socket_base_impl::bind error");
             }
         }
-        ipAddress_ = get_socket_name();
+        socketAddress_ = get_socket_name();
     }
     if (auto success = set_synchronicity(system::synchronization_mode::non_blocking); !success)
         throw std::runtime_error("socket_base_impl::set_synchronicity: failure");
@@ -97,7 +97,7 @@ maniscalco::network::socket_base_impl::socket_base_impl
 catch (std::exception const & exception)
 {
     fileDescriptor_ = {};
-    ipAddress_ = {};
+    socketAddress_ = {};
 }
 
 
@@ -119,13 +119,13 @@ maniscalco::network::socket_base_impl::socket_base_impl
         throw std::runtime_error("socket_base_impl::set_synchronicity: failure");
     if (auto success = set_io_mode(config.ioMode_); !success)
         throw std::runtime_error("socket_base_impl::set_io_mode: failure");
-    ipAddress_ = get_socket_name();
+    socketAddress_ = get_socket_name();
 }
 catch (std::exception const &)
 {
     auto exception = std::current_exception();
     fileDescriptor_ = {};
-    ipAddress_ = {};
+    socketAddress_ = {};
     std::rethrow_exception(exception);
 }
 
@@ -162,7 +162,7 @@ void maniscalco::network::socket_base_impl::on_poll_error
 //=============================================================================
 auto maniscalco::network::socket_base_impl::get_socket_name
 (
-) const noexcept -> ip_address
+) const noexcept -> socket_address
 {
     ::sockaddr_in socketAddress;
     ::socklen_t sizeofSocketAddress(sizeof(socketAddress));
@@ -175,18 +175,18 @@ auto maniscalco::network::socket_base_impl::get_socket_name
 //=============================================================================
 auto maniscalco::network::socket_base_impl::bind
 (
-    ip_address const & ipAddress
+    socket_address const & socketAddress
 ) noexcept -> bind_result
 {
     if (!fileDescriptor_.is_valid())
         return bind_result::invalid_file_descriptor;
 
-    ::sockaddr_in socketAddress = ipAddress;
-    socketAddress.sin_family = AF_INET;
-    auto bindResult = ::bind(fileDescriptor_.get(), (sockaddr const *)&socketAddress, sizeof(socketAddress));
+    ::sockaddr_in sockAddrIn = socketAddress;
+    sockAddrIn.sin_family = AF_INET;
+    auto bindResult = ::bind(fileDescriptor_.get(), (sockaddr const *)&sockAddrIn, sizeof(sockAddrIn));
     if (bindResult == -1)
         return bind_result::bind_error;
-    ipAddress_ = get_socket_name();
+    socketAddress_ = get_socket_name();
     return bind_result::success;
 }
 
@@ -200,7 +200,7 @@ bool maniscalco::network::socket_base_impl::close
     {
         if (closeHandler_)
             closeHandler_(id_);
-        ipAddress_ = {};
+        socketAddress_ = {};
         return true;
     }
     return false;
@@ -228,9 +228,9 @@ auto maniscalco::network::socket_base_impl::get_file_descriptor
 //=============================================================================
 auto maniscalco::network::socket_base_impl::get_ip_address
 (
-) const noexcept -> ip_address
+) const noexcept -> socket_address
 {
-    return ipAddress_;
+    return socketAddress_;
 }
 
 

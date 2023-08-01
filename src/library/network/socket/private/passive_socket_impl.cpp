@@ -4,13 +4,13 @@
 //=============================================================================
 maniscalco::network::passive_socket_impl::socket_impl
 (
-    ip_address ipAddress,
+    socket_address socketAddress,
     configuration const & config,
     event_handlers const & eventHandlers,
     system::work_contract_group & workContractGroup,
     poller & p
 ) try :    
-    socket_base_impl(ipAddress, {.ioMode_ = config.ioMode_}, eventHandlers, ::socket(PF_INET, SOCK_STREAM, IPPROTO_TCP),
+    socket_base_impl(socketAddress, {.ioMode_ = config.ioMode_}, eventHandlers, ::socket(PF_INET, SOCK_STREAM, IPPROTO_TCP),
             workContractGroup.create_contract([this](){this->accept();}, [this](){this->destroy();})),
     pollerRegistration_(p.register_socket(*this)),
     acceptHandler_(eventHandlers.acceptHandler_)   

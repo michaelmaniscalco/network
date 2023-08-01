@@ -34,7 +34,7 @@ namespace maniscalco::network
 
         tcp_listener_socket tcp_listen
         (
-            ip_address,
+            socket_address,
             tcp_listener_socket::configuration,
             tcp_listener_socket::event_handlers
         );
@@ -56,30 +56,30 @@ namespace maniscalco::network
 
         tcp_socket tcp_connect
         (
-            network_id,
             ip_address,
+            socket_address,
             tcp_socket::configuration,
             tcp_socket::event_handlers
         );
 
         udp_socket udp_connect
         (
-            ip_address,
-            ip_address,
+            socket_address,
+            socket_address,
             udp_socket::configuration,
             udp_socket::event_handlers
         );
 
         udp_socket udp_connectionless
         (
-            ip_address,
+            socket_address,
             udp_socket::configuration,
             udp_socket::event_handlers
         );
 
         udp_socket multicast_join
         (
-            ip_address,
+            socket_address,
             udp_socket::configuration,
             udp_socket::event_handlers
         );

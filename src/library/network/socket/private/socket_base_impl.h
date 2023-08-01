@@ -4,7 +4,7 @@
 
 #include <library/network/socket/return_code/connect_result.h>
 
-#include <library/network/ip/ip_address.h>
+#include <library/network/ip/socket_address.h>
 #include <include/file_descriptor.h>
 #include <include/io_mode.h>
 #include <include/synchronization_mode.h>
@@ -54,7 +54,7 @@ namespace maniscalco::network
 
         socket_base_impl
         (
-            ip_address,
+            socket_address,
             configuration const &,
             event_handlers const &,
             system::file_descriptor,
@@ -69,7 +69,7 @@ namespace maniscalco::network
 
         system::file_descriptor const & get_file_descriptor() const noexcept;
         
-        ip_address get_ip_address() const noexcept;
+        socket_address get_ip_address() const noexcept;
 
         socket_id get_id() const noexcept;
 
@@ -109,14 +109,14 @@ namespace maniscalco::network
 
         bind_result bind
         (
-            ip_address const &
+            socket_address const &
         ) noexcept;
 
-        ip_address get_socket_name() const noexcept;
+        socket_address get_socket_name() const noexcept;
 
         system::file_descriptor             fileDescriptor_;
 
-        ip_address                          ipAddress_;
+        socket_address                          socketAddress_;
 
         socket_id                           id_;
 

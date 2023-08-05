@@ -30,7 +30,7 @@ namespace maniscalco::network
             configuration const &
         );
 
-        ~network_interface() = default;
+        ~network_interface();
 
         tcp_listener_socket tcp_listen
         (

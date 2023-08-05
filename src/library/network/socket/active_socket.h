@@ -3,8 +3,6 @@
 #include "./socket.h"
 #include "./traits/traits.h"
 #include "./return_code/connect_result.h"
-#include "./return_code/receive_result.h"
-#include "./return_code/send_result.h"
 
 #include <library/network/ip/socket_address.h>
 #include <library/network/packet/packet.h>
@@ -16,6 +14,8 @@
 #include <functional>
 #include <type_traits>
 #include <span>
+#include <tuple>
+#include <cstdint>
 
 
 namespace maniscalco::network
@@ -37,7 +37,7 @@ namespace maniscalco::network
             using close_handler = std::function<void(socket_id)>;
             using poll_error_handler = std::function<void(socket_id)>;
             using receive_handler = std::function<void(socket_id, packet, socket_address)>;
-            using receive_error_handler = std::function<void(socket_id, receive_error)>;
+            using receive_error_handler = std::function<void(socket_id, std::int32_t)>;
             using packet_allocation_handler = std::function<packet(socket_id, std::size_t)>;
 
             close_handler               closeHandler_;
@@ -49,8 +49,9 @@ namespace maniscalco::network
 
         struct configuration
         {
-            std::size_t receiveBufferSize_{0};
-            std::size_t sendBufferSize_{0};
+            std::size_t socketReceiveBufferSize_{0};
+            std::size_t socketSendBufferSize_{0};
+            std::size_t readBufferSize_{0};
             system::io_mode ioMode_{system::io_mode::read_write};
         };
 
@@ -90,12 +91,12 @@ namespace maniscalco::network
 
         ~socket() = default;
 
-        send_result send
+        std::tuple<std::span<char const>, std::int32_t> send
         (
             std::span<char const>
         );
 
-        send_result send_to
+        std::tuple<std::span<char const>, std::int32_t> send_to
         (
             socket_address,
             std::span<char const>

@@ -7,12 +7,12 @@
 //=============================================================================
 maniscalco::network::socket_address::socket_address
 (
-    std::string_view const value
+    std::string const & value
 )
 {
     auto iter = std::find(value.begin(), value.end(), ':');
-    ipAddress_ = std::string_view(value.begin(), std::distance(value.begin(), iter));
-    portId_ = std::string_view(++iter, value.end());
+    ipAddress_ = std::string(value.data(), std::distance(value.begin(), iter));
+    portId_ = std::string((iter < value.end()) ? iter + 1 : iter, value.end());
 }
 
 

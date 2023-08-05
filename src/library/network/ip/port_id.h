@@ -26,7 +26,7 @@ namespace maniscalco::network
 
         port_id
         (
-            std::string_view const
+            std::string const &
         );
 
         explicit constexpr port_id

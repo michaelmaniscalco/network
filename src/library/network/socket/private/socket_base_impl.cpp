@@ -1,5 +1,7 @@
 #include "./socket_base_impl.h"
 
+#include <library/network/exception/exception.h>
+
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netinet/ip.h>
@@ -11,47 +13,6 @@
 
 #include <cstdint>
 #include <string_view>
-
-
-namespace maniscalco::network
-{
-
-    enum class bind_result : std::uint32_t
-    {
-        undefined               = 0,
-        success                 = 1,
-        bind_error              = 2,
-        invalid_file_descriptor = 3
-    };
-
-
-    //=========================================================================
-    [[maybe_unused]] static std::string_view const to_string
-    (
-        bind_result connectResult
-    )
-    {
-        using namespace std::string_literals;
-        
-        static auto constexpr undefined = "undefined";
-        static auto constexpr success = "success";
-        static auto constexpr invalid_file_descriptor = "invalid_file_descriptor";
-        static auto constexpr bind_error = "bind_error";
-
-        switch (connectResult)
-        {
-            case bind_result::success: return success;
-            case bind_result::invalid_file_descriptor: return invalid_file_descriptor;
-            case bind_result::bind_error: return bind_error;
-            case bind_result::undefined: 
-            default:
-            {
-                return undefined;
-            }
-        }
-    }
-
-}
 
 
 //=============================================================================
@@ -69,35 +30,24 @@ maniscalco::network::socket_base_impl::socket_base_impl
     workContract_(std::move(workContract))
 {
     if (auto success = set_socket_option(SOL_SOCKET, SO_REUSEADDR, 1); !success)
-        throw std::runtime_error("socket_base_impl::set reuse address failure");
+        throw socket_option_exception("reuse address failure");
     if (!socketAddress.is_multicast())
     {
-        auto bindResult = bind(socketAddress);
-        switch (bindResult)
-        {
-            case bind_result::success:
-            {
-                break;
-            }
-            default:
-            case bind_result::undefined:
-            case bind_result::bind_error:
-            case bind_result::invalid_file_descriptor:
-            {
-                throw std::runtime_error("socket_base_impl::bind error");
-            }
-        }
+        bind(socketAddress);
         socketAddress_ = get_socket_name();
     }
     if (auto success = set_synchronicity(system::synchronization_mode::non_blocking); !success)
-        throw std::runtime_error("socket_base_impl::set_synchronicity: failure");
+        throw socket_configuration_exception("set non_blocking failure");
     if (auto success = set_io_mode(config.ioMode_); !success)
-        throw std::runtime_error("socket_base_impl::set_io_mode: failure");
+        throw socket_configuration_exception("set_io_mode failure");
 }
 catch (std::exception const & exception)
 {
     fileDescriptor_ = {};
     socketAddress_ = {};
+    closeHandler_ = nullptr;
+    pollErrorHandler_ = nullptr;
+    std::rethrow_exception(std::current_exception());
 }
 
 
@@ -111,22 +61,24 @@ maniscalco::network::socket_base_impl::socket_base_impl
 ) try :
     fileDescriptor_(std::move(fileDescriptor)),
     closeHandler_(eventHandlers.closeHandler_),
+    pollErrorHandler_(eventHandlers.pollErrorHandler_),
     workContract_(std::move(workContract))
 {
     if (auto success = set_socket_option(SOL_SOCKET, SO_REUSEADDR, 1); !success)
-        throw std::runtime_error("socket_base_impl::set reuse address failure");
+        throw socket_option_exception("reuse address failure");
     if (auto success = set_synchronicity(system::synchronization_mode::non_blocking); !success)
-        throw std::runtime_error("socket_base_impl::set_synchronicity: failure");
+        throw socket_configuration_exception("set non_blocking failure");
     if (auto success = set_io_mode(config.ioMode_); !success)
-        throw std::runtime_error("socket_base_impl::set_io_mode: failure");
+        throw socket_configuration_exception("set_io_mode failure");
     socketAddress_ = get_socket_name();
 }
 catch (std::exception const &)
 {
-    auto exception = std::current_exception();
     fileDescriptor_ = {};
     socketAddress_ = {};
-    std::rethrow_exception(exception);
+    closeHandler_ = nullptr;
+    pollErrorHandler_ = nullptr;
+    std::rethrow_exception(std::current_exception());
 }
 
 
@@ -173,21 +125,18 @@ auto maniscalco::network::socket_base_impl::get_socket_name
 
 
 //=============================================================================
-auto maniscalco::network::socket_base_impl::bind
+void maniscalco::network::socket_base_impl::bind
 (
     socket_address const & socketAddress
-) noexcept -> bind_result
+)
 {
     if (!fileDescriptor_.is_valid())
-        return bind_result::invalid_file_descriptor;
-
+        throw bind_exception("invalid file descriptor");
     ::sockaddr_in sockAddrIn = socketAddress;
     sockAddrIn.sin_family = AF_INET;
-    auto bindResult = ::bind(fileDescriptor_.get(), (sockaddr const *)&sockAddrIn, sizeof(sockAddrIn));
-    if (bindResult == -1)
-        return bind_result::bind_error;
+    if (::bind(fileDescriptor_.get(), (sockaddr const *)&sockAddrIn, sizeof(sockAddrIn)) == -1)
+        throw bind_exception("bind_error");
     socketAddress_ = get_socket_name();
-    return bind_result::success;
 }
 
 

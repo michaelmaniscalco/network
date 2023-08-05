@@ -20,9 +20,6 @@
 namespace maniscalco::network
 {
 
-    enum class bind_result : std::uint32_t;
-
-
     //=========================================================================
     class socket_base_impl :
         public non_copyable,
@@ -107,16 +104,16 @@ namespace maniscalco::network
             T
         ) noexcept;
 
-        bind_result bind
+        void bind
         (
             socket_address const &
-        ) noexcept;
+        );
 
         socket_address get_socket_name() const noexcept;
 
         system::file_descriptor             fileDescriptor_;
 
-        socket_address                          socketAddress_;
+        socket_address                      socketAddress_;
 
         socket_id                           id_;
 

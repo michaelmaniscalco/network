@@ -16,8 +16,9 @@ maniscalco::network::active_socket<P>::socket
     impl_ = std::move(decltype(impl_)(new impl_type(
             socketAddress, 
             {
-                .receiveBufferSize_ = config.receiveBufferSize_,
-                .sendBufferSize_ = config.sendBufferSize_,
+                .socketReceiveBufferSize_ = config.socketReceiveBufferSize_,
+                .socketSendBufferSize_ = config.socketSendBufferSize_,
+                .readBufferSize_ = config.readBufferSize_,
                 .ioMode_ = config.ioMode_
             },
             {
@@ -46,8 +47,9 @@ maniscalco::network::active_socket<P>::socket
     impl_ = std::move(decltype(impl_)(new impl_type(
             {ipAddress}, 
             {
-                .receiveBufferSize_ = config.receiveBufferSize_,
-                .sendBufferSize_ = config.sendBufferSize_,
+                .socketReceiveBufferSize_ = config.socketReceiveBufferSize_,
+                .socketSendBufferSize_ = config.socketSendBufferSize_,
+                .readBufferSize_ = config.readBufferSize_,
                 .ioMode_ = config.ioMode_
             },
             {
@@ -76,8 +78,9 @@ maniscalco::network::active_socket<P>::socket
     impl_ = std::move(decltype(impl_)(new impl_type(
             std::move(fileDescriptor), 
             {
-                .receiveBufferSize_ = config.receiveBufferSize_,
-                .sendBufferSize_ = config.sendBufferSize_,
+                .socketReceiveBufferSize_ = config.socketReceiveBufferSize_,
+                .socketSendBufferSize_ = config.socketSendBufferSize_,
+                .readBufferSize_ = config.readBufferSize_,
                 .ioMode_ = config.ioMode_
             },
             {
@@ -119,10 +122,10 @@ requires (P == network_transport_protocol::udp)
 template <maniscalco::network::network_transport_protocol P>
 auto maniscalco::network::active_socket<P>::send
 (
-    std::span<char const> buffer
-) -> send_result
+    std::span<char const> source
+) -> std::tuple<std::span<char const>, std::int32_t>
 {
-    return (impl_) ? impl_->send(std::move(buffer)) : send_result{ENOTCONN, 0};
+    return (impl_) ? impl_->send(source) : std::make_tuple(source, ENOTCONN);
 }
 
 
@@ -131,11 +134,11 @@ template <maniscalco::network::network_transport_protocol P>
 auto maniscalco::network::active_socket<P>::send_to
 (
     socket_address destinationSocketAddress,
-    std::span<char const> buffer
-) -> send_result 
+    std::span<char const> source
+) -> std::tuple<std::span<char const>, std::int32_t> 
 requires (P == network_transport_protocol::udp)
 {
-    return (impl_) ? impl_->send_to(destinationSocketAddress, std::move(buffer)) : send_result{ENOTCONN, 0};
+    return (impl_) ? impl_->send_to(destinationSocketAddress, source) : std::make_tuple(source, ENOTCONN);
 }
 
 

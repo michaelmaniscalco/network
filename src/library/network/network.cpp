@@ -7,7 +7,7 @@
 
 
 //=============================================================================
-auto maniscalco::network::get_network_id_from_hostname
+auto maniscalco::network::get_ip_address_from_hostname
 (
     // experimental 
     // placeholder for now

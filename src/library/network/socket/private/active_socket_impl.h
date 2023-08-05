@@ -4,9 +4,6 @@
 #include <library/network/polling/poller.h>
 #include <library/network/packet/packet.h>
 
-#include <library/network/socket/return_code/receive_result.h>
-#include <library/network/socket/return_code/send_result.h>
-
 #include "./socket_base_impl.h"
 
 #include <include/io_mode.h>
@@ -15,6 +12,8 @@
 #include <functional>
 #include <type_traits>
 #include <span>
+#include <tuple>
+#include <cstdint>
 
 
 namespace maniscalco::network
@@ -32,7 +31,7 @@ namespace maniscalco::network
         {
             using receive_handler = std::function<void(socket_id, packet, socket_address)>;
             using packet_allocation_handler = std::function<packet(socket_id, std::size_t)>;
-            using receive_error_handler = std::function<void(socket_id, receive_error)>;
+            using receive_error_handler = std::function<void(socket_id, std::int32_t)>;
 
             receive_handler             receiveHandler_;
             receive_error_handler       receiveErrorHandler_;
@@ -41,8 +40,9 @@ namespace maniscalco::network
 
         struct configuration
         {
-            std::size_t     receiveBufferSize_{0};
-            std::size_t     sendBufferSize_{0};
+            std::size_t     socketReceiveBufferSize_{0};
+            std::size_t     socketSendBufferSize_{0};
+            std::size_t     readBufferSize_{0};
             system::io_mode ioMode_{system::io_mode::read_write};
         };
 
@@ -62,19 +62,21 @@ namespace maniscalco::network
             event_handlers const &,
             system::work_contract_group &,
             poller &
-        ) requires (tcp_protocol_concept<P>);
+        );
 
-        send_result send
+        virtual ~socket_impl() = default;
+
+        std::tuple<std::span<char const>, std::int32_t> send
         (
             std::span<char const>
         ) requires (tcp_protocol_concept<P>);
 
-        send_result send
+        std::tuple<std::span<char const>, std::int32_t> send
         (
             std::span<char const>
         ) requires (udp_protocol_concept<P>);
 
-        send_result send_to
+        std::tuple<std::span<char const>, std::int32_t> send_to
         (
             socket_address,
             std::span<char const>
@@ -85,7 +87,9 @@ namespace maniscalco::network
             socket_address const &
         ) noexcept;
 
-        void receive();
+        void receive() requires (udp_protocol_concept<P>);
+
+        void receive() requires (tcp_protocol_concept<P>);
 
         void destroy();
 
@@ -96,7 +100,7 @@ namespace maniscalco::network
         connect_result join
         (
             ip_address
-        );
+        ) requires (udp_protocol_concept<P>);
 
     private:
 
@@ -104,7 +108,9 @@ namespace maniscalco::network
 
         bool disconnect();
 
-        socket_address                                          peerSocketAddress_;
+        std::size_t                                         readBufferSize_;
+
+        socket_address                                      peerSocketAddress_;
 
         poller_registration                                 pollerRegistration_;
 

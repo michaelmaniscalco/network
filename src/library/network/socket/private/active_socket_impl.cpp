@@ -6,6 +6,14 @@
 #include <sys/types.h>
 
 
+namespace
+{
+    static auto constexpr max_tcp_read_buffer_size = ((1ul << 10) * 64);
+    static auto constexpr default_tcp_read_buffer_size = ((1ul << 10) * 4);
+    static auto constexpr default_udp_read_buffer_size = ((1ul << 10) * 2);
+}
+
+
 //=============================================================================
 template <maniscalco::network::network_transport_protocol P>
 maniscalco::network::active_socket_impl<P>::socket_impl
@@ -15,22 +23,30 @@ maniscalco::network::active_socket_impl<P>::socket_impl
     event_handlers const & eventHandlers,
     system::work_contract_group & workContractGroup,
     poller & p
-) try :
+) noexcept :
     socket_base_impl(socketAddress, {.ioMode_ = config.ioMode_}, eventHandlers, 
             (P == network_transport_protocol::udp) ? ::socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP) : ::socket(PF_INET, SOCK_STREAM, IPPROTO_TCP),
             workContractGroup.create_contract([this](){this->receive();}, [this](){this->destroy();})),
     pollerRegistration_(p.register_socket(*this)),
     receiveHandler_(eventHandlers.receiveHandler_),
     receiveErrorHandler_(eventHandlers.receiveErrorHandler_),
-    packetAllocationHandler_(eventHandlers.packetAllocationHandler_ ? eventHandlers.packetAllocationHandler_ : [](auto, auto desiredSize){return packet(desiredSize);})  
+    packetAllocationHandler_(eventHandlers.packetAllocationHandler_ ? 
+            eventHandlers.packetAllocationHandler_ : 
+            [](auto, auto desiredSize)
+            {
+                auto alloc = new char[desiredSize];
+                return packet({.deleteHandler_ = [](auto const & p){delete [] p.data();}}, {alloc, desiredSize});
+            })
 {
-    if (config.receiveBufferSize_ > 0)
-        set_socket_option(SOL_SOCKET, SO_RCVBUF, config.receiveBufferSize_);
-    if (config.sendBufferSize_ > 0)
-        set_socket_option(SOL_SOCKET, SO_SNDBUF, config.sendBufferSize_);
-}
-catch (std::exception const & exception)
-{
+    if constexpr (tcp_protocol_concept<P>)
+        readBufferSize_ = (config.readBufferSize_ != 0) ? std::min(config.readBufferSize_, max_tcp_read_buffer_size) : default_tcp_read_buffer_size;
+    if constexpr (udp_protocol_concept<P>)
+        readBufferSize_ = default_udp_read_buffer_size;
+
+    if (config.socketReceiveBufferSize_ > 0)
+        set_socket_option(SOL_SOCKET, SO_RCVBUF, config.socketReceiveBufferSize_);
+    if (config.socketSendBufferSize_ > 0)
+        set_socket_option(SOL_SOCKET, SO_SNDBUF, config.socketSendBufferSize_);
 }
 
 
@@ -45,23 +61,32 @@ maniscalco::network::active_socket_impl<P>::socket_impl
     event_handlers const & eventHandlers,
     system::work_contract_group & workContractGroup,
     poller & p
-) requires (tcp_protocol_concept<P>) 
-try :
+) noexcept :
     socket_base_impl({.ioMode_ = config.ioMode_}, eventHandlers, std::move(fileDescriptor),
             workContractGroup.create_contract([this](){this->receive();}, [this](){this->destroy();})),
     pollerRegistration_(p.register_socket(*this)),
     receiveHandler_(eventHandlers.receiveHandler_),
     receiveErrorHandler_(eventHandlers.receiveErrorHandler_),
-    packetAllocationHandler_(eventHandlers.packetAllocationHandler_ ? eventHandlers.packetAllocationHandler_ : [](auto, auto desiredSize){return packet(desiredSize);})    
+    packetAllocationHandler_(eventHandlers.packetAllocationHandler_ ? 
+            eventHandlers.packetAllocationHandler_ : 
+            [](auto, auto desiredSize)
+            {
+                auto alloc = new char[desiredSize];
+                return packet({.deleteHandler_ = [](auto const & p){delete [] p.data();}}, {alloc, desiredSize});
+            })  
 {
-    peerSocketAddress_ = get_peer_name();
-    if (config.receiveBufferSize_ > 0)
-        set_socket_option(SOL_SOCKET, SO_RCVBUF, config.receiveBufferSize_);
-    if (config.sendBufferSize_ > 0)
-        set_socket_option(SOL_SOCKET, SO_SNDBUF, config.sendBufferSize_);
-}
-catch (std::exception const & exception)
-{
+    if constexpr (tcp_protocol_concept<P>)
+    {
+        readBufferSize_ = (config.readBufferSize_ != 0) ? std::min(config.readBufferSize_, max_tcp_read_buffer_size) : default_tcp_read_buffer_size;
+        peerSocketAddress_ = get_peer_name();
+    }
+    if constexpr (udp_protocol_concept<P>)
+        readBufferSize_ = default_udp_read_buffer_size;
+
+    if (config.socketReceiveBufferSize_ > 0)
+        set_socket_option(SOL_SOCKET, SO_RCVBUF, config.socketReceiveBufferSize_);
+    if (config.socketSendBufferSize_ > 0)
+        set_socket_option(SOL_SOCKET, SO_SNDBUF, config.socketSendBufferSize_);
 }
 
 
@@ -94,19 +119,11 @@ auto maniscalco::network::active_socket_impl<P>::connect_to
 
 
 //=============================================================================
-template <>
-auto maniscalco::network::tcp_socket_impl::join
-(
-    ip_address
-) -> connect_result = delete;
-
-
-//=============================================================================
-template <>
-auto maniscalco::network::udp_socket_impl::join
+template <maniscalco::network::network_transport_protocol P>
+auto maniscalco::network::active_socket_impl<P>::join
 (
     ip_address ipAddress
-) -> connect_result
+) requires (udp_protocol_concept<P>) -> connect_result
 {
     if (!ipAddress.is_valid())
         return connect_result::invalid_destination;
@@ -139,7 +156,7 @@ bool maniscalco::network::active_socket_impl<P>::disconnect
 (
 )
 {
-    if ((!is_connected()) ||(!fileDescriptor_.is_valid()))
+    if ((!is_connected()) || (!fileDescriptor_.is_valid()))
         return false;
 
     if constexpr (P == network_transport_protocol::udp)
@@ -168,25 +185,24 @@ bool maniscalco::network::active_socket_impl<P>::disconnect
 template <maniscalco::network::network_transport_protocol P>
 auto maniscalco::network::active_socket_impl<P>::send
 (
-    std::span<char const> buffer
-) -> send_result 
+    std::span<char const> source
+) -> std::tuple<std::span<char const>, std::int32_t> 
 requires (tcp_protocol_concept<P>) 
 {
-    auto bytesToSend = buffer.size();
-    while (!buffer.empty())
+    while (!source.empty())
     {
-        auto result = ::send(fileDescriptor_.get(), buffer.data(), buffer.size(), MSG_NOSIGNAL);
+        auto result = ::send(fileDescriptor_.get(), source.data(), source.size(), MSG_NOSIGNAL);
         if (result < 0)
         {
             if (result != EAGAIN)
-                return {result, bytesToSend - buffer.size()};
+                return {source, result};
         }
         else
         {
-            buffer = buffer.subspan(result);
+            source = source.subspan(result);
         }
     }
-    return {bytesToSend};
+    return {source, 0};
 }
 
 
@@ -194,11 +210,11 @@ requires (tcp_protocol_concept<P>)
 template <maniscalco::network::network_transport_protocol P>
 auto maniscalco::network::active_socket_impl<P>::send
 (
-    std::span<char const> buffer
-) -> send_result
+    std::span<char const> source
+) -> std::tuple<std::span<char const>, std::int32_t>
 requires (udp_protocol_concept<P>) 
 {
-    return send_to({}, buffer);
+    return send_to({}, source);
 }
 
 
@@ -207,26 +223,52 @@ template <maniscalco::network::network_transport_protocol P>
 auto maniscalco::network::active_socket_impl<P>::send_to
 (
     socket_address destinationSocketAddress,
-    std::span<char const> buffer
-) -> send_result
+    std::span<char const> source
+) -> std::tuple<std::span<char const>, std::int32_t>
 requires (udp_protocol_concept<P>) 
 {
     ::sockaddr_in sockAddr = destinationSocketAddress;
     sockAddr.sin_family = AF_INET;
     auto p = destinationSocketAddress.is_valid() ? reinterpret_cast<sockaddr const *>(&sockAddr) : nullptr;
-
     while (true)
     {
-        auto result = ::sendto(fileDescriptor_.get(), buffer.data(), buffer.size(), MSG_NOSIGNAL, p, (p == nullptr) ? 0 : sizeof(sockAddr));
+        auto result = ::sendto(fileDescriptor_.get(), source.data(), source.size(), MSG_NOSIGNAL, p, (p == nullptr) ? 0 : sizeof(sockAddr));
         if (result < 0)
         {
             if (result != EAGAIN)
-                return {result, 0};
+                return {source, result};
         }
         else
         {
-            return {buffer.size()};
+            return {source.subspan(result), 0};
         }
+    } 
+}
+
+
+//=============================================================================
+template <maniscalco::network::network_transport_protocol P>
+void maniscalco::network::active_socket_impl<P>::receive
+(
+) requires (tcp_protocol_concept<P>)
+{
+    packet buffer = packetAllocationHandler_(id_, readBufferSize_);
+    if (auto bytesReceived = ::recv(fileDescriptor_.get(), buffer.data(), buffer.capacity(), 0); bytesReceived >= 0)
+    {
+        if (bytesReceived == 0)        
+        {
+            // graceful shutdown
+            close();
+            return;
+        }
+        buffer.resize(bytesReceived);
+        receiveHandler_(id_, std::move(buffer), peerSocketAddress_);
+        on_polled(); // there could be more ...
+    }
+    else
+    {
+        if ((errno != EAGAIN) && (errno != EWOULDBLOCK) && (receiveErrorHandler_))
+            receiveErrorHandler_(id_, errno);
     }
 }
 
@@ -235,24 +277,15 @@ requires (udp_protocol_concept<P>)
 template <maniscalco::network::network_transport_protocol P>
 void maniscalco::network::active_socket_impl<P>::receive
 (
-)
+) requires (udp_protocol_concept<P>)
 {
     ::sockaddr_in sockAddrIn;
     ::socklen_t addressLength = sizeof(sockAddrIn);
 
-    packet buffer = packetAllocationHandler_(id_, 2048);
-    if (auto bytesReceived = ::recvfrom(fileDescriptor_.get(), buffer.data(), buffer.size(), 0, 
+    packet buffer = packetAllocationHandler_(id_, readBufferSize_);
+    if (auto bytesReceived = ::recvfrom(fileDescriptor_.get(), buffer.data(), buffer.capacity(), 0, 
             reinterpret_cast<::sockaddr *>(&sockAddrIn), &addressLength); bytesReceived >= 0)
     {
-        if constexpr (tcp_protocol_concept<P>)
-        {
-            if (bytesReceived == 0)        
-            {
-                // graceful shutdown
-                close();
-                return;
-            }
-        }
         buffer.resize(bytesReceived);
         receiveHandler_(id_, std::move(buffer), sockAddrIn);
         on_polled(); // there could be more ...
@@ -260,7 +293,7 @@ void maniscalco::network::active_socket_impl<P>::receive
     else
     {
         if ((errno != EAGAIN) && (errno != EWOULDBLOCK) && (receiveErrorHandler_))
-            receiveErrorHandler_(id_, receive_error{errno});
+            receiveErrorHandler_(id_, errno);
     }
 }
 

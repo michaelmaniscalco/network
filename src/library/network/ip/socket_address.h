@@ -28,9 +28,15 @@ namespace maniscalco::network
         socket_address(socket_address &&) noexcept = default;
         socket_address & operator = (socket_address &&) noexcept = default;
 
+        template <std::size_t N>
+        socket_address
+        ( 
+            char const (&)[N]
+        );
+
         socket_address
         (
-            std::string_view const
+            std::string const &
         );
 
         constexpr socket_address
@@ -78,6 +84,22 @@ namespace maniscalco::network
     }
 
 } // namespace maniscalco::network
+
+
+//=============================================================================
+template <std::size_t N>
+inline maniscalco::network::socket_address::socket_address
+( 
+    char const (&value)[N]
+)
+{
+    auto begin = value;
+    auto end = value + N;
+
+    auto iter = std::find(begin, end, ':');
+    ipAddress_ = std::string(begin, std::distance(begin, iter));
+    portId_ = std::string((iter < end) ? iter + 1 : iter, end);
+}
 
 
 //=============================================================================

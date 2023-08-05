@@ -5,6 +5,7 @@
 #include <include/non_copyable.h>
 
 #include <iostream>
+#include <memory>
 #include <map>
 
 using namespace maniscalco;
@@ -28,7 +29,9 @@ struct echo_server : non_movable, non_copyable
     struct session : non_movable, non_copyable
     {
         session(network_interface & networkInterface, file_descriptor fileDescriptor):
-            tcpSocket_(networkInterface.tcp_accept(std::move(fileDescriptor), {}, {.receiveHandler_ = [this](auto, auto packet, auto){tcpSocket_.send(packet);}})){}
+            tcpSocket_(networkInterface.tcp_accept(std::move(fileDescriptor), {}, 
+                    {.receiveHandler_ = [this](auto, auto packet, auto)
+                            {tcpSocket_.send(std::span<char const>(packet.begin(), packet.size()));}})){}
         tcp_socket tcpSocket_;
     };
 

@@ -13,40 +13,64 @@ int main
 )
 {
     using namespace maniscalco::network;
-    using namespace std::string_literals;
 
-    ip_address multicastIpAddress{"239.0.0.1"};
-    port_id multicastPortId{3000};
-
-    socket_address anyLookbackSocketAddress{loop_back, port_id_any};
+    auto print = [](std::string_view const input)
+            {
+                static std::mutex mutex;
+                std::lock_guard lockGuard(mutex);
+                std::cout << input << '\n';
+            };
 
     // set up network interface and threads to poll and receive
     network_interface networkInterface;
     std::jthread pollerThread([&](std::stop_token const & stopToken){while (!stopToken.stop_requested()) networkInterface.poll();});
-    std::jthread workerThread([&](std::stop_token const & stopToken){while (!stopToken.stop_requested()) networkInterface.service_sockets();});
+
+    static auto constexpr num_works = 4;
+    std::array<std::jthread, num_works> workerThreads;
+    for (auto & workerThread : workerThreads)
+        workerThread = std::jthread{[&](std::stop_token const & stopToken){while (!stopToken.stop_requested()) networkInterface.service_sockets();}};
 
     // set up sender
-    auto sender = networkInterface.udp_connect(anyLookbackSocketAddress, {multicastIpAddress, multicastPortId}, {}, {});
+    auto sender = networkInterface.udp_connect({loop_back, port_id_any}, "239.0.0.1:3000", {}, {});
 
     // set up receivers
-    static auto constexpr number_of_receivers = 10;
+    static auto constexpr number_of_receivers = 1;
     std::array<udp_socket, number_of_receivers> receivers;
+    auto receiverId = 0;
     for (auto & receiver : receivers)
-        receiver = networkInterface.multicast_join({multicastIpAddress, multicastPortId}, {}, 
-                {.receiveHandler_ = [](auto, auto packet, auto){std::cout << "got multicast packet. data = " << std::string_view(packet.data(), packet.size()) << std::endl;}});
+        receiver = networkInterface.multicast_join("239.0.0.1:3000", {}, 
+                {
+                    .receiveHandler_ = [&, id = receiverId++](auto, auto packet, auto)
+                            {
+                                print(fmt::format("receiver #{} got multicast packet. data = {}", id, std::string_view(packet.data(), packet.size())));
+                            },
+                    .packetAllocationHandler_ = [](socket_id, std::size_t capacity)
+                            {
+                                auto allocation = new char[capacity];
+                                return packet(
+                                        {
+                                            .deleteHandler_ = [](auto const & p){delete [] p.data();}
+                                        },  std::span(allocation, capacity));
+                            }
+                });
 
     // send messages
     for (auto i = 0; i < 100; ++i)
-        sender.send("this is a multicast message");
+    {
+        sender.send(fmt::format("this is a multicast message # {}", i));
+        std::this_thread::sleep_for(std::chrono::microseconds(10)); 
+    }
 
     // demo is async so give it a moment to complete
     std::this_thread::sleep_for(std::chrono::seconds(1)); 
 
     pollerThread.request_stop();
-    workerThread.request_stop();
+    for (auto & workerThread : workerThreads)
+        workerThread.request_stop();
 
     pollerThread.join();
-    workerThread.join();
+    for (auto & workerThread : workerThreads)
+        workerThread.join();
 
     return 0;
 }

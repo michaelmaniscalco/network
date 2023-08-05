@@ -4,7 +4,7 @@
 //=============================================================================
 maniscalco::network::port_id::port_id
 (
-    std::string_view const value
+    std::string const & value
 )
 {
     // TODO: handle invalid value

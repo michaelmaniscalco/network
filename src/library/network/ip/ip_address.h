@@ -37,7 +37,7 @@ namespace maniscalco::network
 
         ip_address  
         (
-            std::string_view const
+            std::string const &
         ) noexcept;
 
         explicit constexpr ip_address
@@ -123,7 +123,7 @@ constexpr maniscalco::network::ip_address::ip_address
 //=============================================================================
 inline maniscalco::network::ip_address::ip_address  
 (
-    std::string_view const value
+    std::string const & value
 ) noexcept :
     ip_address(endian_swap<std::endian::big, std::endian::native>(::inet_addr(value.data())))
 {

@@ -22,6 +22,7 @@ namespace
     static maniscalco::system::file_descriptor const invalid_file_descriptor;
 }
 
+
 //=============================================================================
 maniscalco::network::poller::poller
 (

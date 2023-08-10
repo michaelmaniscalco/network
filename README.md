@@ -1,3 +1,11 @@
+# moved
+this repo has been moved to my other account which is dedicated to C++ architecture: 
+https://github.com/buildingcpp/network
+
+
+
+
+
 # network [WIP] - a simple, easy to use async network library using work contracts
 lots of logging, documentation and error handling to be added
 
